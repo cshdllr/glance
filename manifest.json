@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Looker — Design Inspector",
+  "version": "1.0.0",
+  "description": "A Figma-style design inspector for any webpage. Click the toolbar icon or use Cmd+Shift+X.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["inspector.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "commands": {
+    "toggle-inspector": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "Toggle the design inspector"
+    }
+  },
+  "action": {
+    "default_title": "Toggle Looker Inspector"
+  }
+}

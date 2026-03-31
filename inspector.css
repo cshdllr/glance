@@ -1,0 +1,379 @@
+/* ─── Highlight overlay ──────────────────────────────────────────────────── */
+#__looker_highlight__ {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2147483646;
+  outline: 1.5px solid #18a0fb;
+  outline-offset: -1px;
+  background: rgba(24, 160, 251, 0.08);
+  border-radius: 2px;
+  transition: all 0.08s ease;
+}
+
+#__looker_highlight__.__looker_pinned__ {
+  outline: 2px solid #ff6b6b;
+  background: rgba(255, 107, 107, 0.07);
+}
+
+/* ─── Panel ──────────────────────────────────────────────────────────────── */
+#__looker_panel__ {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 260px;
+  max-height: calc(100vh - 40px);
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
+  font-size: 11px;
+  background: #1e1e2e;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04);
+  overflow: hidden;
+  color: #cdd6f4;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.__looker_panel_header__ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #181825;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  cursor: move;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.__looker_logo__ {
+  font-size: 11px;
+  font-weight: 600;
+  color: #cba6f7;
+  letter-spacing: 0.05em;
+}
+
+.__looker_header_actions__ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.__looker_copy_changes__ {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #585b70;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 9px;
+  padding: 2px 7px;
+  line-height: 1.4;
+  transition: all 0.15s;
+  display: none;
+}
+
+.__looker_copy_changes__.__looker_has_changes__ {
+  display: block;
+  color: #fab387;
+  border-color: rgba(250, 179, 135, 0.3);
+  background: rgba(250, 179, 135, 0.08);
+}
+
+.__looker_copy_changes__.__looker_has_changes__:hover {
+  background: rgba(250, 179, 135, 0.15);
+  border-color: rgba(250, 179, 135, 0.5);
+  color: #ffd0a8;
+}
+
+.__looker_close__ {
+  background: none;
+  border: none;
+  color: #585b70;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.__looker_close__:hover { color: #cdd6f4; }
+
+/* ─── Body ───────────────────────────────────────────────────────────────── */
+.__looker_panel_body__ {
+  overflow-y: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #313244 transparent;
+}
+.__looker_panel_body__::-webkit-scrollbar { width: 4px; }
+.__looker_panel_body__::-webkit-scrollbar-track { background: transparent; }
+.__looker_panel_body__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+
+.__looker_empty__ {
+  padding: 24px 16px;
+  color: #585b70;
+  text-align: center;
+  font-size: 11px;
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+.__looker_section__ {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.__looker_section_title__ {
+  padding: 8px 12px 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #585b70;
+}
+
+.__looker_section_content__ {
+  padding: 0 12px 8px;
+}
+
+/* ─── Selector ───────────────────────────────────────────────────────────── */
+.__looker_selector__ {
+  font-size: 12px;
+  color: #89b4fa;
+  padding: 4px 0 2px;
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* ─── Classes ───────────────────────────────────────────────────────────── */
+.__looker_classes__ {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.__looker_class_pill__ {
+  background: #313244;
+  color: #cba6f7;
+  border: 1px solid rgba(203, 166, 247, 0.15);
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-family: inherit;
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1.4;
+}
+
+.__looker_class_pill__:hover {
+  background: #45475a;
+  border-color: rgba(203, 166, 247, 0.3);
+  color: #d0bfff;
+}
+
+.__looker_class_pill__.__looker_class_active__ {
+  background: rgba(203, 166, 247, 0.15);
+  border-color: #cba6f7;
+  color: #cba6f7;
+}
+
+.__looker_class_details__ {
+  margin-top: 4px;
+}
+
+.__looker_class_rule__ {
+  padding: 4px 0;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.__looker_class_rule__:first-child {
+  border-top: none;
+}
+
+.__looker_class_rule_selector__ {
+  font-size: 9px;
+  color: #89b4fa;
+  padding: 2px 0 3px;
+  word-break: break-all;
+  opacity: 0.7;
+}
+
+.__looker_class_empty__ {
+  font-size: 10px;
+  color: #585b70;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+/* ─── Rows ───────────────────────────────────────────────────────────────── */
+.__looker_row__ {
+  display: flex;
+  align-items: center;
+  padding: 2.5px 0;
+  gap: 8px;
+  min-height: 20px;
+}
+
+.__looker_key__ {
+  color: #585b70;
+  flex-shrink: 0;
+  width: 52px;
+  font-size: 10px;
+}
+
+.__looker_val__ {
+  color: #cdd6f4;
+  font-size: 10.5px;
+  cursor: pointer;
+  padding: 1px 4px;
+  border-radius: 3px;
+  transition: background 0.1s, color 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.__looker_val__:hover {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+
+.__looker_val__.__looker_copied__ {
+  background: rgba(166, 227, 161, 0.15);
+  color: #a6e3a1;
+}
+
+.__looker_val__.__looker_val_changed__ {
+  color: #fab387;
+  background: rgba(250, 179, 135, 0.1);
+}
+
+.__looker_val__.__looker_val_changed__:hover {
+  background: rgba(250, 179, 135, 0.18);
+  color: #ffd0a8;
+}
+
+/* ─── Inline edit input ─────────────────────────────────────────────────── */
+.__looker_edit_input__ {
+  background: #181825;
+  border: 1px solid #cba6f7;
+  border-radius: 3px;
+  color: #cdd6f4;
+  font-family: inherit;
+  font-size: 10.5px;
+  padding: 1px 4px;
+  width: 100%;
+  min-width: 60px;
+  outline: none;
+  line-height: 1.4;
+  box-shadow: 0 0 0 2px rgba(203, 166, 247, 0.2);
+}
+
+.__looker_edit_input__:focus {
+  border-color: #cba6f7;
+}
+
+/* ─── Color swatch ───────────────────────────────────────────────────────── */
+.__looker_swatch__ {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+
+/* ─── Box model ──────────────────────────────────────────────────────────── */
+.__looker_box_model__ {
+  margin: 6px 0 4px;
+}
+
+.__looker_bm_margin__ {
+  border: 1.5px dashed #f38ba8;
+  border-radius: 4px;
+  padding: 2px;
+  position: relative;
+}
+
+.__looker_bm_border__ {
+  border: 1.5px solid #fab387;
+  border-radius: 3px;
+  padding: 2px;
+  position: relative;
+}
+
+.__looker_bm_padding__ {
+  border: 1.5px solid #a6e3a1;
+  border-radius: 2px;
+  padding: 2px;
+  position: relative;
+}
+
+.__looker_bm_content__ {
+  background: rgba(137, 180, 250, 0.12);
+  border: 1px solid rgba(137, 180, 250, 0.2);
+  border-radius: 2px;
+  color: #89b4fa;
+  font-size: 9px;
+  padding: 3px 6px;
+  text-align: center;
+  min-width: 40px;
+  white-space: nowrap;
+}
+
+.__looker_bm_label__ {
+  font-size: 8px;
+  color: #45475a;
+  padding: 0 2px;
+  letter-spacing: 0.04em;
+}
+
+.__looker_bm_inner__,
+.__looker_bm_pcenter__ {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.__looker_bm_val__ {
+  font-size: 9px;
+  color: #bac2de;
+  text-align: center;
+  padding: 1px 3px;
+  min-width: 14px;
+}
+
+.__looker_bm_top__, .__looker_bm_bottom__,
+.__looker_bm_ptop__, .__looker_bm_pbottom__,
+.__looker_bm_btop__, .__looker_bm_bbottom__ {
+  display: block;
+  text-align: center;
+}
+
+/* ─── Toast ──────────────────────────────────────────────────────────────── */
+#__looker_toast__ {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(12px);
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 11px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  z-index: 2147483647;
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap;
+}
+
+#__looker_toast__.__looker_toast_show__ {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
