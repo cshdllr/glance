@@ -576,75 +576,6 @@
   background: rgba(166, 227, 161, 0.08);
 }
 
-/* ─── Device Toolbar ────────────────────────────────────────────────────── */
-.__looker_device_bar__ {
-  display: none;
-  padding: 8px 12px;
-  background: #181825;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  gap: 6px;
-  flex-direction: column;
-  flex-shrink: 0;
-}
-.__looker_device_bar__.__looker_device_bar_open__ {
-  display: flex;
-}
-
-.__looker_device_selector__ {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.__looker_device_selector__ select {
-  flex: 1;
-  background: #313244;
-  color: #cdd6f4;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 10px;
-  padding: 3px 6px;
-  outline: none;
-  cursor: pointer;
-  -webkit-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23585b70' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
-  padding-right: 20px;
-}
-.__looker_device_selector__ select:hover {
-  border-color: rgba(255,255,255,0.15);
-}
-.__looker_device_selector__ select:focus {
-  border-color: #89b4fa;
-}
-
-.__looker_rotate_btn__ {
-  background: #313244;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 4px;
-  color: #585b70;
-  cursor: pointer;
-  font-size: 14px;
-  padding: 2px 6px;
-  line-height: 1;
-  transition: all 0.15s;
-}
-.__looker_rotate_btn__:hover {
-  color: #cdd6f4;
-  border-color: rgba(255,255,255,0.15);
-  background: #45475a;
-}
-
-.__looker_device_dims__ {
-  font-size: 9px;
-  color: #585b70;
-  text-align: center;
-  letter-spacing: 0.05em;
-}
-
 /* ─── Device Frame ──────────────────────────────────────────────────────── */
 #__looker_device_frame__ {
   position: fixed;
@@ -709,9 +640,11 @@ html.__looker_device_mode__ body {
 }
 html.__looker_device_mode__ #__looker_panel__,
 html.__looker_device_mode__ #__looker_device_frame__,
-html.__looker_device_mode__ #__looker_toast__,
-html.__looker_device_mode__ #__looker_highlight__ {
+html.__looker_device_mode__ #__looker_toast__ {
   visibility: visible !important;
+}
+html.__looker_device_mode__ #__looker_highlight__ {
+  display: none !important;
 }
 
 /* ─── Sidebar page push ────────────────────────────────────────────────── */

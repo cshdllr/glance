@@ -27,18 +27,7 @@
   // ─── Device Preview ──────────────────────────────────────────────────────
   let devicePreviewActive = false;
   let deviceFrame = null;
-  let currentDevice = null;
-  let isLandscape = false;
-
-  const DEVICES = [
-    { name: "iPhone SE",     w: 375, h: 667 },
-    { name: "iPhone 15",     w: 393, h: 852 },
-    { name: "iPhone 15 Pro Max", w: 430, h: 932 },
-    { name: "Pixel 8",       w: 412, h: 924 },
-    { name: "Galaxy S24",    w: 360, h: 780 },
-    { name: "iPad Mini",     w: 768, h: 1024 },
-    { name: "iPad Air",      w: 820, h: 1180 },
-  ];
+  const DEVICE = { name: "iPhone 15", w: 393, h: 852 };
 
   window.__lookerToggle = function() {
     inspectorActive ? deactivate() : activate();
@@ -97,18 +86,26 @@
   }
 
   // ─── Events ────────────────────────────────────────────────────────────────
+  function isLookerUI(el) {
+    return !el || el.id === "__looker_highlight__"
+      || el.closest("#__looker_panel__")
+      || el.closest("#__looker_device_frame__");
+  }
+
   function onMouseMove(e) {
+    if (devicePreviewActive) return;
     if (pinnedElement) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el || el.id === "__looker_highlight__" || el.closest("#__looker_panel__")) return;
+    if (isLookerUI(el)) return;
     hoveredElement = el;
     positionHighlight(el);
     renderPanel(el);
   }
 
   function onClick(e) {
+    if (devicePreviewActive) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (!el || el.id === "__looker_highlight__" || el.closest("#__looker_panel__")) return;
+    if (isLookerUI(el)) return;
     e.preventDefault();
     e.stopPropagation();
 
@@ -149,15 +146,6 @@
           <button class="__looker_close__" title="Close (Esc)">✕</button>
         </div>
       </div>
-      <div class="__looker_device_bar__" id="__looker_device_bar__">
-        <div class="__looker_device_selector__">
-          <select id="__looker_device_select__">
-            ${DEVICES.map((d, i) => `<option value="${i}">${d.name}</option>`).join("")}
-          </select>
-          <button class="__looker_rotate_btn__" id="__looker_rotate_btn__" title="Rotate device">⟳</button>
-        </div>
-        <div class="__looker_device_dims__" id="__looker_device_dims__"></div>
-      </div>
       <div class="__looker_panel_body__" id="__looker_body__">
         <div class="__looker_empty__">Hover over any element</div>
       </div>
@@ -167,8 +155,6 @@
     panel.querySelector("#__looker_copy_changes__").addEventListener("click", copyAllChanges);
     panel.querySelector("#__looker_layout_toggle__").addEventListener("click", toggleLayoutMode);
     panel.querySelector("#__looker_device_toggle__").addEventListener("click", toggleDevicePreview);
-    panel.querySelector("#__looker_device_select__").addEventListener("change", onDeviceChange);
-    panel.querySelector("#__looker_rotate_btn__").addEventListener("click", rotateDevice);
     initResizeHandle();
     if (layoutMode === "float") makeDraggable(panel);
   }
@@ -178,7 +164,8 @@
     const body = panel.querySelector("#__looker_body__");
     if (!body) return;
 
-    const cs = window.getComputedStyle(el);
+    const elWin = el.ownerDocument.defaultView || window;
+    const cs = elWin.getComputedStyle(el);
     const rect = el.getBoundingClientRect();
     const tag = el.tagName.toLowerCase();
     const elId = el.id ? `#${el.id}` : "";
@@ -473,7 +460,7 @@
         );
         pill.classList.add("__looker_class_active__");
 
-        const rules = getClassRules(className);
+        const rules = getClassRules(className, targetEl.ownerDocument);
         if (rules.length === 0) {
           detailsContainer.innerHTML = `<div class="__looker_class_empty__">No defined properties found</div>`;
         } else {
@@ -499,10 +486,11 @@
     });
   }
 
-  function getClassRules(className) {
+  function getClassRules(className, doc) {
+    const targetDoc = doc || document;
     const results = [];
     try {
-      for (const sheet of document.styleSheets) {
+      for (const sheet of targetDoc.styleSheets) {
         let rules;
         try { rules = sheet.cssRules || sheet.rules; } catch { continue; }
         if (!rules) continue;
@@ -584,37 +572,28 @@
 
   function enableDevicePreview() {
     devicePreviewActive = true;
-    isLandscape = false;
-    currentDevice = DEVICES[0];
 
     const toggleBtn = document.getElementById("__looker_device_toggle__");
     if (toggleBtn) toggleBtn.classList.add("__looker_device_active__");
 
-    const bar = document.getElementById("__looker_device_bar__");
-    if (bar) bar.classList.add("__looker_device_bar_open__");
-
-    const select = document.getElementById("__looker_device_select__");
-    if (select) select.value = "0";
-
     createDeviceFrame();
     applyDeviceSize();
-    showToast(`Device preview: ${currentDevice.name}`);
+    showToast(`${DEVICE.name} preview`);
   }
 
   function disableDevicePreview() {
     devicePreviewActive = false;
-    currentDevice = null;
-    isLandscape = false;
 
     const toggleBtn = document.getElementById("__looker_device_toggle__");
     if (toggleBtn) toggleBtn.classList.remove("__looker_device_active__");
 
-    const bar = document.getElementById("__looker_device_bar__");
-    if (bar) bar.classList.remove("__looker_device_bar_open__");
-
     removeDeviceFrame();
     showToast("Device preview off");
   }
+
+  let iframeHighlight = null;
+  let iframePinnedElement = null;
+  let iframeCleanup = null;
 
   function createDeviceFrame() {
     removeDeviceFrame();
@@ -626,20 +605,94 @@
       <div class="__looker_device_home_bar__"></div>
     `;
     document.body.appendChild(deviceFrame);
-
-    // Hide page content behind the frame
     document.documentElement.classList.add("__looker_device_mode__");
+
+    const iframe = deviceFrame.querySelector("#__looker_device_iframe__");
+
+    iframe.addEventListener("load", () => {
+      try {
+        const idoc = iframe.contentDocument;
+        if (!idoc || !idoc.body) return;
+        initIframeInspection(idoc);
+      } catch {}
+    });
+  }
+
+  function initIframeInspection(idoc) {
+    iframeHighlight = idoc.createElement("div");
+    iframeHighlight.style.cssText = "position:absolute;pointer-events:none;z-index:2147483646;" +
+      "outline:1.5px solid #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.08);" +
+      "border-radius:2px;transition:all 0.08s ease;display:none;";
+    idoc.body.appendChild(iframeHighlight);
+    idoc.body.style.cursor = "crosshair";
+
+    function onIframeMove(e) {
+      if (iframePinnedElement) return;
+      const el = idoc.elementFromPoint(e.clientX, e.clientY);
+      if (!el || el === iframeHighlight) return;
+      positionIframeHighlight(el, idoc);
+      renderPanel(el);
+    }
+
+    function onIframeClick(e) {
+      const el = idoc.elementFromPoint(e.clientX, e.clientY);
+      if (!el || el === iframeHighlight) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (iframePinnedElement === el) {
+        iframePinnedElement = null;
+        idoc.body.style.cursor = "crosshair";
+        iframeHighlight.style.outline = "1.5px solid #18a0fb";
+        iframeHighlight.style.background = "rgba(24,160,251,0.08)";
+      } else {
+        iframePinnedElement = el;
+        idoc.body.style.cursor = "default";
+        positionIframeHighlight(el, idoc);
+        renderPanel(el);
+        iframeHighlight.style.outline = "2px solid #ff6b6b";
+        iframeHighlight.style.background = "rgba(255,107,107,0.07)";
+      }
+    }
+
+    idoc.addEventListener("mousemove", onIframeMove, true);
+    idoc.addEventListener("click", onIframeClick, true);
+
+    iframeCleanup = () => {
+      try {
+        idoc.removeEventListener("mousemove", onIframeMove, true);
+        idoc.removeEventListener("click", onIframeClick, true);
+        if (iframeHighlight && iframeHighlight.parentNode) iframeHighlight.remove();
+      } catch {}
+    };
+  }
+
+  function positionIframeHighlight(el, idoc) {
+    if (!iframeHighlight) return;
+    try {
+      const r = el.getBoundingClientRect();
+      const scrollX = idoc.defaultView.scrollX;
+      const scrollY = idoc.defaultView.scrollY;
+      iframeHighlight.style.display = "block";
+      iframeHighlight.style.left = (r.left + scrollX) + "px";
+      iframeHighlight.style.top = (r.top + scrollY) + "px";
+      iframeHighlight.style.width = r.width + "px";
+      iframeHighlight.style.height = r.height + "px";
+    } catch {}
   }
 
   function removeDeviceFrame() {
+    if (iframeCleanup) { iframeCleanup(); iframeCleanup = null; }
     if (deviceFrame) { deviceFrame.remove(); deviceFrame = null; }
+    iframeHighlight = null;
+    iframePinnedElement = null;
     document.documentElement.classList.remove("__looker_device_mode__");
   }
 
   function applyDeviceSize() {
-    if (!currentDevice || !deviceFrame) return;
-    const w = isLandscape ? currentDevice.h : currentDevice.w;
-    const h = isLandscape ? currentDevice.w : currentDevice.h;
+    if (!deviceFrame) return;
+    const w = DEVICE.w;
+    const h = DEVICE.h;
 
     const iframe = deviceFrame.querySelector("#__looker_device_iframe__");
     if (iframe) {
@@ -658,21 +711,6 @@
     const panelOffset = layoutMode === "sidebar" ? Math.round(sidebarWidth / 2) : 140;
     deviceFrame.style.left = `calc(50% - ${panelOffset}px)`;
     deviceFrame.style.transform = `translate(-50%, -50%) scale(${scale})`;
-
-    const dims = document.getElementById("__looker_device_dims__");
-    if (dims) dims.textContent = `${w} × ${h}`;
-  }
-
-  function onDeviceChange(e) {
-    const idx = parseInt(e.target.value, 10);
-    currentDevice = DEVICES[idx];
-    applyDeviceSize();
-    showToast(`Device: ${currentDevice.name}`);
-  }
-
-  function rotateDevice() {
-    isLandscape = !isLandscape;
-    applyDeviceSize();
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
