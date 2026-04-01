@@ -15,24 +15,57 @@
   background: rgba(255, 107, 107, 0.07);
 }
 
-/* ─── Panel ──────────────────────────────────────────────────────────────── */
+/* ─── Panel (shared) ─────────────────────────────────────────────────────── */
 #__looker_panel__ {
   position: fixed;
+  z-index: 2147483647;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  font-size: 11px;
+  background: #1e1e2e;
+  overflow: hidden;
+  color: #cdd6f4;
+}
+
+/* ─── Sidebar mode (default) ─────────────────────────────────────────────── */
+#__looker_panel__.__looker_mode_sidebar__ {
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 280px;
+  max-height: 100vh;
+  border-radius: 0;
+  border-left: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ─── Float mode ─────────────────────────────────────────────────────────── */
+#__looker_panel__.__looker_mode_float__ {
   top: 20px;
   right: 20px;
   width: 260px;
   max-height: calc(100vh - 40px);
-  z-index: 2147483647;
-  display: flex;
-  flex-direction: column;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', 'Consolas', monospace;
-  font-size: 11px;
-  background: #1e1e2e;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 10px;
   box-shadow: 0 24px 64px rgba(0,0,0,0.6), 0 0 0 0.5px rgba(255,255,255,0.04);
-  overflow: hidden;
-  color: #cdd6f4;
+}
+
+/* ─── Resize handle ──────────────────────────────────────────────────────── */
+.__looker_resize_handle__ {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 10;
+}
+.__looker_resize_handle__:hover,
+.__looker_resize_handle__.__looker_resizing__ {
+  background: rgba(137, 180, 250, 0.4);
+}
+.__looker_mode_float__ .__looker_resize_handle__ {
+  display: none;
 }
 
 /* ─── Header ─────────────────────────────────────────────────────────────── */
@@ -40,25 +73,30 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
-  background: #181825;
+  padding: 8px 12px;
+  background: #1e1e2e;
   border-bottom: 1px solid rgba(255,255,255,0.06);
-  cursor: move;
   user-select: none;
   flex-shrink: 0;
+}
+.__looker_mode_float__ .__looker_panel_header__ {
+  cursor: move;
+}
+.__looker_mode_sidebar__ .__looker_panel_header__ {
+  cursor: default;
 }
 
 .__looker_logo__ {
   font-size: 11px;
   font-weight: 600;
   color: #cba6f7;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
 }
 
 .__looker_header_actions__ {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
 .__looker_copy_changes__ {
@@ -94,11 +132,12 @@
   color: #585b70;
   cursor: pointer;
   font-size: 12px;
-  padding: 0;
+  padding: 4px;
   line-height: 1;
   transition: color 0.15s;
+  border-radius: 4px;
 }
-.__looker_close__:hover { color: #cdd6f4; }
+.__looker_close__:hover { color: #cdd6f4; background: rgba(255,255,255,0.06); }
 
 /* ─── Body ───────────────────────────────────────────────────────────────── */
 .__looker_panel_body__ {
@@ -112,37 +151,140 @@
 .__looker_panel_body__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
 
 .__looker_empty__ {
-  padding: 24px 16px;
-  color: #585b70;
+  padding: 32px 16px;
+  color: #45475a;
   text-align: center;
   font-size: 11px;
+  line-height: 1.6;
 }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
 .__looker_section__ {
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding: 10px 12px;
+  text-align: left;
 }
 
 .__looker_section_title__ {
-  padding: 8px 12px 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #585b70;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #cdd6f4;
+  margin-bottom: 8px;
+  text-align: left;
 }
 
 .__looker_section_content__ {
-  padding: 0 12px 8px;
+  padding: 0;
 }
 
 /* ─── Selector ───────────────────────────────────────────────────────────── */
 .__looker_selector__ {
-  font-size: 12px;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  font-size: 11px;
   color: #89b4fa;
-  padding: 4px 0 2px;
+  padding: 0;
   word-break: break-all;
   line-height: 1.5;
+}
+
+/* ─── Figma-style field grid ─────────────────────────────────────────────── */
+.__looker_field_grid__ {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.__looker_field__ {
+  display: flex;
+  align-items: center;
+  background: #262637;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 5px 8px;
+  gap: 6px;
+  min-height: 28px;
+  transition: border-color 0.12s;
+}
+.__looker_field__:hover {
+  border-color: rgba(255,255,255,0.12);
+}
+
+.__looker_field_full__ {
+  grid-column: 1 / -1;
+}
+
+.__looker_field_label__ {
+  font-size: 10px;
+  color: #585b70;
+  flex-shrink: 0;
+  min-width: 14px;
+  text-align: left;
+}
+
+.__looker_field_value__ {
+  font-size: 11px;
+  color: #cdd6f4;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 2px;
+  margin: -1px -2px;
+  transition: background 0.1s, color 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.__looker_field_value__:hover {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+}
+.__looker_field_value__.__looker_copied__ {
+  background: rgba(166, 227, 161, 0.15);
+  color: #a6e3a1;
+}
+.__looker_field_value__.__looker_val_changed__ {
+  color: #fab387;
+  background: rgba(250, 179, 135, 0.1);
+}
+
+/* ─── Icon button row (alignment, position, etc.) ────────────────────────── */
+.__looker_icon_row__ {
+  display: flex;
+  gap: 2px;
+  background: #262637;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.__looker_icon_btn__ {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  background: none;
+  color: #585b70;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-size: 11px;
+  padding: 0;
+}
+.__looker_icon_btn__:hover {
+  background: rgba(255,255,255,0.06);
+  color: #cdd6f4;
+}
+.__looker_icon_btn__.__looker_icon_active__ {
+  background: rgba(137, 180, 250, 0.12);
+  color: #89b4fa;
 }
 
 /* ─── Classes ───────────────────────────────────────────────────────────── */
@@ -206,13 +348,13 @@
   font-style: italic;
 }
 
-/* ─── Rows ───────────────────────────────────────────────────────────────── */
+/* ─── Rows (used in class details) ───────────────────────────────────────── */
 .__looker_row__ {
   display: flex;
   align-items: center;
-  padding: 2.5px 0;
+  padding: 2px 0;
   gap: 8px;
-  min-height: 20px;
+  min-height: 22px;
 }
 
 .__looker_key__ {
@@ -256,24 +398,57 @@
   color: #ffd0a8;
 }
 
+/* ─── Color field ────────────────────────────────────────────────────────── */
+.__looker_color_field__ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #262637;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px;
+  padding: 5px 8px;
+  min-height: 28px;
+}
+.__looker_color_field__:hover {
+  border-color: rgba(255,255,255,0.12);
+}
+.__looker_color_preview__ {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+.__looker_color_hex__ {
+  font-size: 11px;
+  color: #cdd6f4;
+  cursor: pointer;
+  flex: 1;
+}
+.__looker_color_opacity__ {
+  font-size: 10px;
+  color: #585b70;
+  flex-shrink: 0;
+}
+
 /* ─── Inline edit input ─────────────────────────────────────────────────── */
 .__looker_edit_input__ {
-  background: #181825;
-  border: 1px solid #cba6f7;
-  border-radius: 3px;
+  background: #1e1e2e;
+  border: 1px solid #89b4fa;
+  border-radius: 4px;
   color: #cdd6f4;
   font-family: inherit;
-  font-size: 10.5px;
-  padding: 1px 4px;
+  font-size: 11px;
+  padding: 2px 6px;
   width: 100%;
   min-width: 60px;
   outline: none;
   line-height: 1.4;
-  box-shadow: 0 0 0 2px rgba(203, 166, 247, 0.2);
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
 }
 
 .__looker_edit_input__:focus {
-  border-color: #cba6f7;
+  border-color: #89b4fa;
 }
 
 /* ─── Color swatch ───────────────────────────────────────────────────────── */
@@ -351,6 +526,197 @@
 .__looker_bm_btop__, .__looker_bm_bbottom__ {
   display: block;
   text-align: center;
+}
+
+/* ─── Device Toggle Button ──────────────────────────────────────────────── */
+.__looker_device_toggle__ {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #585b70;
+  cursor: pointer;
+  padding: 2px 5px;
+  line-height: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.__looker_device_toggle__:hover {
+  color: #cdd6f4;
+  border-color: rgba(255,255,255,0.15);
+}
+.__looker_device_toggle__.__looker_device_active__ {
+  color: #89b4fa;
+  border-color: rgba(137, 180, 250, 0.4);
+  background: rgba(137, 180, 250, 0.1);
+}
+
+/* ─── Layout Toggle Button ─────────────────────────────────────────────── */
+.__looker_layout_toggle__ {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #585b70;
+  cursor: pointer;
+  padding: 2px 5px;
+  line-height: 0;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.__looker_layout_toggle__:hover {
+  color: #cdd6f4;
+  border-color: rgba(255,255,255,0.15);
+}
+.__looker_layout_toggle__.__looker_layout_sidebar__ {
+  color: #a6e3a1;
+  border-color: rgba(166, 227, 161, 0.3);
+  background: rgba(166, 227, 161, 0.08);
+}
+
+/* ─── Device Toolbar ────────────────────────────────────────────────────── */
+.__looker_device_bar__ {
+  display: none;
+  padding: 8px 12px;
+  background: #181825;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 6px;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.__looker_device_bar__.__looker_device_bar_open__ {
+  display: flex;
+}
+
+.__looker_device_selector__ {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.__looker_device_selector__ select {
+  flex: 1;
+  background: #313244;
+  color: #cdd6f4;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  padding: 3px 6px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23585b70' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 20px;
+}
+.__looker_device_selector__ select:hover {
+  border-color: rgba(255,255,255,0.15);
+}
+.__looker_device_selector__ select:focus {
+  border-color: #89b4fa;
+}
+
+.__looker_rotate_btn__ {
+  background: #313244;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #585b70;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+.__looker_rotate_btn__:hover {
+  color: #cdd6f4;
+  border-color: rgba(255,255,255,0.15);
+  background: #45475a;
+}
+
+.__looker_device_dims__ {
+  font-size: 9px;
+  color: #585b70;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Device Frame ──────────────────────────────────────────────────────── */
+#__looker_device_frame__ {
+  position: fixed;
+  top: 50%;
+  left: calc(50% - 140px);
+  transform: translate(-50%, -50%);
+  z-index: 2147483640;
+  background: #11111b;
+  border: 3px solid #313244;
+  border-radius: 36px;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 0 0 1px rgba(255,255,255,0.03);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+  transform-origin: center center;
+}
+
+.__looker_device_notch__ {
+  width: 100px;
+  height: 24px;
+  background: #11111b;
+  border-radius: 0 0 16px 16px;
+  margin-top: 0;
+  flex-shrink: 0;
+  position: relative;
+}
+.__looker_device_notch__::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 4px;
+  background: #1e1e2e;
+  border-radius: 4px;
+}
+
+#__looker_device_iframe__ {
+  border: none;
+  background: #fff;
+  flex: 1;
+  display: block;
+}
+
+.__looker_device_home_bar__ {
+  width: 100px;
+  height: 4px;
+  background: #313244;
+  border-radius: 4px;
+  margin: 10px 0 16px;
+  flex-shrink: 0;
+}
+
+/* ─── Device Mode Background ────────────────────────────────────────────── */
+html.__looker_device_mode__ {
+  background: #0a0a14 !important;
+}
+html.__looker_device_mode__ body {
+  visibility: hidden !important;
+}
+html.__looker_device_mode__ #__looker_panel__,
+html.__looker_device_mode__ #__looker_device_frame__,
+html.__looker_device_mode__ #__looker_toast__,
+html.__looker_device_mode__ #__looker_highlight__ {
+  visibility: visible !important;
+}
+
+/* ─── Sidebar page push ────────────────────────────────────────────────── */
+html.__looker_sidebar_active__ {
+  margin-right: var(--__looker-sidebar-w, 280px) !important;
 }
 
 /* ─── Toast ──────────────────────────────────────────────────────────────── */
