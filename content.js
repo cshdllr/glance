@@ -358,29 +358,33 @@
 
       ${section("Spacing", `
         <div class="__looker_box_model__">
-          <div class="__looker_bm_label__ __looker_bm_area_label__">margin</div>
-          <div class="__looker_bm_margin__">
-            <div class="__looker_bm_val__ __looker_bm_top__">${stripPx(cs.marginTop)}</div>
-            <div class="__looker_bm_inner__">
-              <div class="__looker_bm_val__ __looker_bm_left__">${stripPx(cs.marginLeft)}</div>
-              <div class="__looker_bm_border__">
-                <div class="__looker_bm_label__ __looker_bm_area_label__">border</div>
-                <div class="__looker_bm_val__ __looker_bm_btop__">${stripPx(cs.borderTopWidth)}</div>
-                <div class="__looker_bm_padding__">
-                  <div class="__looker_bm_label__ __looker_bm_area_label__">padding</div>
-                  <div class="__looker_bm_val__ __looker_bm_ptop__">${stripPx(cs.paddingTop)}</div>
-                  <div class="__looker_bm_pcenter__">
-                    <div class="__looker_bm_val__ __looker_bm_pleft__">${stripPx(cs.paddingLeft)}</div>
-                    <div class="__looker_bm_content__">${contentW} × ${contentH}</div>
-                    <div class="__looker_bm_val__ __looker_bm_pright__">${stripPx(cs.paddingRight)}</div>
+          <div class="__looker_bm_zone__ __looker_bm_margin__">
+            <div class="__looker_bm_zone_label__ __looker_bm_margin_label__">margin</div>
+            <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="margin-top">${stripPx(cs.marginTop)}</span>
+            <div class="__looker_bm_mid__">
+              <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="margin-left">${stripPx(cs.marginLeft)}</span>
+              <div class="__looker_bm_zone__ __looker_bm_border_zone__">
+                <div class="__looker_bm_zone_label__ __looker_bm_border_label__">border</div>
+                <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="border-top-width">${stripPx(cs.borderTopWidth)}</span>
+                <div class="__looker_bm_mid__">
+                  <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="border-left-width">${stripPx(cs.borderLeftWidth)}</span>
+                  <div class="__looker_bm_zone__ __looker_bm_padding_zone__">
+                    <div class="__looker_bm_zone_label__ __looker_bm_padding_label__">padding</div>
+                    <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="padding-top">${stripPx(cs.paddingTop)}</span>
+                    <div class="__looker_bm_mid__">
+                      <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="padding-left">${stripPx(cs.paddingLeft)}</span>
+                      <div class="__looker_bm_content__">${contentW} × ${contentH}</div>
+                      <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="padding-right">${stripPx(cs.paddingRight)}</span>
+                    </div>
+                    <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="padding-bottom">${stripPx(cs.paddingBottom)}</span>
                   </div>
-                  <div class="__looker_bm_val__ __looker_bm_pbottom__">${stripPx(cs.paddingBottom)}</div>
+                  <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="border-right-width">${stripPx(cs.borderRightWidth)}</span>
                 </div>
-                <div class="__looker_bm_val__ __looker_bm_bbottom__">${stripPx(cs.borderBottomWidth)}</div>
+                <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="border-bottom-width">${stripPx(cs.borderBottomWidth)}</span>
               </div>
-              <div class="__looker_bm_val__ __looker_bm_right__">${stripPx(cs.marginRight)}</div>
+              <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="margin-right">${stripPx(cs.marginRight)}</span>
             </div>
-            <div class="__looker_bm_val__ __looker_bm_bottom__">${stripPx(cs.marginBottom)}</div>
+            <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="margin-bottom">${stripPx(cs.marginBottom)}</span>
           </div>
         </div>
       `)}
@@ -409,6 +413,7 @@
     `;
 
     attachFieldHandlers(body, el);
+    attachBoxModelHandlers(body, el);
     attachClassPillHandlers(body, el);
     attachDomNavHandlers(body, el, children, hasParent);
     updateCopyChangesButton();
@@ -434,6 +439,61 @@
         e.stopPropagation();
         const idx = parseInt(btn.dataset.childIdx, 10);
         if (children[idx]) selectElement(children[idx]);
+      });
+    });
+  }
+
+  function attachBoxModelHandlers(container, targetEl) {
+    container.querySelectorAll(".__looker_bm_val__[data-bmprop]").forEach(valSpan => {
+      valSpan.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (valSpan.querySelector(".__looker_edit_input__")) return;
+        const cssProp = valSpan.dataset.bmprop;
+        const currentVal = valSpan.textContent.trim();
+        const input = document.createElement("input");
+        input.type = "text";
+        input.className = "__looker_edit_input__";
+        input.value = currentVal;
+        valSpan.textContent = "";
+        valSpan.appendChild(input);
+        input.focus();
+        input.select();
+
+        const commit = () => {
+          const newVal = input.value.trim();
+          input.remove();
+          const withUnit = newVal && !/[a-z%]/i.test(newVal) ? newVal + "px" : newVal;
+          if (newVal && newVal !== currentVal) {
+            applyChange(targetEl, cssProp, currentVal + "px", withUnit);
+            renderPanel(targetEl);
+          } else {
+            valSpan.textContent = currentVal;
+          }
+        };
+
+        const nudge = (dir, amount) => {
+          const num = parseFloat(input.value);
+          if (isNaN(num)) return false;
+          const newNum = Math.round((num + dir * amount) * 100) / 100;
+          input.value = String(newNum);
+          const withUnit = newNum + "px";
+          applyChange(targetEl, cssProp, null, withUnit);
+          positionHighlight(targetEl);
+          return true;
+        };
+
+        input.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") { e.preventDefault(); commit(); return; }
+          if (e.key === "Escape") { e.preventDefault(); input.remove(); valSpan.textContent = currentVal; return; }
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            const dir = e.key === "ArrowUp" ? 1 : -1;
+            const step = e.shiftKey ? 10 : 1;
+            if (nudge(dir, step)) e.preventDefault();
+          }
+          e.stopPropagation();
+        });
+        input.addEventListener("blur", commit);
+        input.addEventListener("click", (e) => e.stopPropagation());
       });
     });
   }
@@ -1149,7 +1209,7 @@
         const idoc = iframe.contentDocument;
         if (!idoc || !idoc.body) return;
         const style = idoc.createElement("style");
-        style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; }`;
+        style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; scrollbar-width: none !important; } html::-webkit-scrollbar { display: none !important; }`;
         idoc.head.appendChild(style);
         initIframeInspection(idoc);
       } catch {}
