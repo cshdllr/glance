@@ -154,76 +154,68 @@
   padding: 0;
 }
 
-/* ─── Selector ───────────────────────────────────────────────────────────── */
-.__looker_selector__ {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
-  font-size: 11px;
-  color: #89b4fa;
-  padding: 0;
-  word-break: break-all;
-  line-height: 1.5;
-}
-
-/* ─── DOM navigation ─────────────────────────────────────────────────────── */
-.__looker_dom_nav__ {
+/* ─── DOM tree ───────────────────────────────────────────────────────────── */
+.__looker_dom_tree__ {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-top: 6px;
-}
-
-.__looker_dom_nav_btn__ {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #262637;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 4px;
-  color: #89b4fa;
-  cursor: pointer;
+  gap: 1px;
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
   font-size: 10px;
-  padding: 3px 7px;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  line-height: 1.3;
+  line-height: 1.4;
+}
+
+.__looker_dom_tree_tag__ {
+  word-break: break-all;
+}
+
+.__looker_dom_tree_item__ {
+  display: block;
+  background: none;
+  border: none;
+  color: #585b70;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  padding: 3px 6px;
+  border-radius: 4px;
   text-align: left;
+  transition: background 0.1s, color 0.1s;
 }
-.__looker_dom_nav_btn__:hover {
+.__looker_dom_tree_item__:hover {
+  background: rgba(137, 180, 250, 0.08);
+  color: #89b4fa;
+}
+
+.__looker_dom_tree_current__ {
+  padding: 4px 8px;
+  margin-left: 12px;
   background: rgba(137, 180, 250, 0.1);
-  border-color: rgba(137, 180, 250, 0.3);
-  color: #b4d0fb;
-}
-.__looker_dom_nav_btn__:disabled {
-  opacity: 0.3;
-  cursor: default;
-  pointer-events: none;
-}
-.__looker_dom_nav_btn__ svg {
-  flex-shrink: 0;
-  opacity: 0.6;
+  border-radius: 4px;
+  color: #89b4fa;
+  font-weight: 500;
+  border-left: 2px solid #89b4fa;
 }
 
-.__looker_dom_children__ {
+.__looker_dom_tree_children__ {
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  flex-direction: column;
+  gap: 1px;
+  margin-left: 24px;
 }
 
-.__looker_dom_child_btn__ {
-  font-size: 9px;
+.__looker_dom_tree_children__ .__looker_dom_tree_item__ {
+  color: #6c7086;
+  font-size: 9.5px;
   padding: 2px 6px;
-  color: #a6adc8;
-  background: rgba(255,255,255,0.03);
 }
-.__looker_dom_child_btn__:hover {
+.__looker_dom_tree_children__ .__looker_dom_tree_item__:hover {
   color: #89b4fa;
 }
 
 .__looker_dom_more__ {
   font-size: 9px;
-  color: #585b70;
-  padding: 2px 4px;
-  align-self: center;
+  color: #45475a;
+  padding: 2px 6px;
 }
 
 /* ─── Figma-style field grid ─────────────────────────────────────────────── */
@@ -445,6 +437,9 @@
   border-radius: 6px;
   padding: 5px 8px;
   min-height: 28px;
+}
+.__looker_color_field__ + .__looker_color_field__ {
+  margin-top: 4px;
 }
 .__looker_color_field__:hover {
   border-color: rgba(255,255,255,0.12);
@@ -718,55 +713,37 @@
 #__looker_device_frame__ {
   position: fixed;
   top: 50%;
-  left: calc(50% - 140px);
-  transform: translate(-50%, -50%);
   z-index: 2147483640;
-  background: #11111b;
-  border: 3px solid #313244;
-  border-radius: 36px;
-  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04), inset 0 0 0 1px rgba(255,255,255,0.03);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  overflow: hidden;
+  width: 417px;
+  height: 876px;
   transform-origin: center center;
 }
 
-.__looker_device_notch__ {
-  width: 100px;
-  height: 24px;
-  background: #11111b;
-  border-radius: 0 0 16px 16px;
-  margin-top: 0;
-  flex-shrink: 0;
-  position: relative;
-}
-.__looker_device_notch__::after {
-  content: "";
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 40px;
-  height: 4px;
-  background: #1e1e2e;
-  border-radius: 4px;
-}
-
 #__looker_device_iframe__ {
+  position: absolute;
+  left: 12px;
+  top: 19px;
+  width: 393px;
+  height: 780px;
   border: none;
   background: #fff;
-  flex: 1;
   display: block;
+  border-radius: 58px 58px 0 0;
+  overflow: hidden;
+  clip-path: inset(0 round 58px 58px 0 0);
+  z-index: 1;
+  border-radius: 0;
 }
 
-.__looker_device_home_bar__ {
-  width: 100px;
-  height: 4px;
-  background: #313244;
-  border-radius: 4px;
-  margin: 10px 0 16px;
-  flex-shrink: 0;
+.__looker_device_frame_img__ {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 417px;
+  height: 876px;
+  pointer-events: none;
+  z-index: 2;
+  user-select: none;
 }
 
 /* ─── Device Mode Background ────────────────────────────────────────────── */

@@ -23,7 +23,8 @@
   // ─── Device Preview ──────────────────────────────────────────────────────
   let devicePreviewActive = false;
   let deviceFrame = null;
-  const DEVICE = { name: "iPhone 15", w: 393, h: 852 };
+  const DEVICE = { name: "iPhone", w: 393, h: 780 };
+  const FRAME = { w: 417, h: 876, cutoutX: 12, cutoutY: 19, statusBarH: 54 };
 
   // ─── Field type lookups ────────────────────────────────────────────────────
   const ENUM_PROPS = {
@@ -211,22 +212,27 @@
       !c.id?.startsWith("__looker_") && !c.classList?.contains("__looker_highlight__")
     );
 
+    const parentTag = hasParent ? el.parentElement.tagName.toLowerCase() : "";
+    const parentId = hasParent && el.parentElement.id ? "#" + el.parentElement.id : "";
+    const parentCls = hasParent && el.parentElement.classList.length
+      ? "." + Array.from(el.parentElement.classList).slice(0, 1).join(".") : "";
+
     body.innerHTML = `
       ${section("Element", `
-        <div class="__looker_selector__">&lt;${tag}${elId}${classes}&gt;</div>
-        <div class="__looker_dom_nav__">
-          <button class="__looker_dom_nav_btn__" id="__looker_nav_parent__" ${hasParent ? "" : "disabled"} title="Select parent element">
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,3 8,6"/></svg>
-            <span>${hasParent ? "&lt;" + el.parentElement.tagName.toLowerCase() + "&gt;" : "—"}</span>
-          </button>
-          ${children.length ? `<div class="__looker_dom_children__">
+        <div class="__looker_dom_tree__">
+          ${hasParent ? `<button class="__looker_dom_tree_item__" id="__looker_nav_parent__" title="Select parent element">
+            <span class="__looker_dom_tree_tag__">&lt;${parentTag}${parentId}${parentCls}&gt;</span>
+          </button>` : ""}
+          <div class="__looker_dom_tree_current__">
+            <span class="__looker_dom_tree_tag__">&lt;${tag}${elId}${classes}&gt;</span>
+          </div>
+          ${children.length ? `<div class="__looker_dom_tree_children__">
             ${children.slice(0, 12).map((c, i) => {
               const cTag = c.tagName.toLowerCase();
               const cId = c.id ? "#" + c.id : "";
               const cCls = c.classList.length ? "." + Array.from(c.classList).slice(0,1).join(".") : "";
-              return `<button class="__looker_dom_nav_btn__ __looker_dom_child_btn__" data-child-idx="${i}" title="Select child element">
-                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 5,7 8,4"/></svg>
-                <span>&lt;${cTag}${cId}${cCls}&gt;</span>
+              return `<button class="__looker_dom_tree_item__ __looker_dom_child_btn__" data-child-idx="${i}" title="Select child element">
+                <span class="__looker_dom_tree_tag__">&lt;${cTag}${cId}${cCls}&gt;</span>
               </button>`;
             }).join("")}
             ${children.length > 12 ? `<span class="__looker_dom_more__">+${children.length - 12} more</span>` : ""}
@@ -449,19 +455,26 @@
 
   // ─── Enum dropdown ─────────────────────────────────────────────────────────
   let activeDropdown = null;
+  let activeDropdownLabel = null;
 
   function dismissDropdown() {
     if (activeDropdown) { activeDropdown.remove(); activeDropdown = null; }
+    activeDropdownLabel = null;
     document.removeEventListener("click", onDropdownOutsideClick, true);
   }
 
   function onDropdownOutsideClick(e) {
     if (activeDropdown && !activeDropdown.contains(e.target)) {
+      if (activeDropdownLabel && (activeDropdownLabel === e.target || activeDropdownLabel.contains(e.target))) return;
       dismissDropdown();
     }
   }
 
   function showEnumDropdown(lbl, valEl, cssProp, targetEl) {
+    if (activeDropdownLabel === lbl) {
+      dismissDropdown();
+      return;
+    }
     dismissDropdown();
     const options = ENUM_PROPS[cssProp];
     if (!options) return;
@@ -488,6 +501,7 @@
     fieldEl.style.position = "relative";
     fieldEl.appendChild(dd);
     activeDropdown = dd;
+    activeDropdownLabel = lbl;
 
     setTimeout(() => document.addEventListener("click", onDropdownOutsideClick, true), 0);
   }
@@ -600,9 +614,12 @@
 
     function applyColor() {
       const color = outputColor();
+      const hex = hexFromState();
       swatch.style.background = color;
       previewSwatch.style.background = color;
-      hexInput.value = hexFromState();
+      hexInput.value = hex;
+      hexEl.textContent = hex;
+      hexEl.dataset.copy = color;
       applyChange(targetEl, cssProp, rawColor, color);
     }
 
@@ -997,10 +1014,11 @@
     removeDeviceFrame();
     deviceFrame = document.createElement("div");
     deviceFrame.id = "__looker_device_frame__";
+
+    const frameSrc = chrome.runtime.getURL("assets/iphone-frame.png");
     deviceFrame.innerHTML = `
-      <div class="__looker_device_notch__"></div>
       <iframe id="__looker_device_iframe__" src="${window.location.href}"></iframe>
-      <div class="__looker_device_home_bar__"></div>
+      <img class="__looker_device_frame_img__" src="${frameSrc}" draggable="false" />
     `;
     document.body.appendChild(deviceFrame);
     document.documentElement.classList.add("__looker_device_mode__");
@@ -1011,6 +1029,9 @@
       try {
         const idoc = iframe.contentDocument;
         if (!idoc || !idoc.body) return;
+        const style = idoc.createElement("style");
+        style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; }`;
+        idoc.head.appendChild(style);
         initIframeInspection(idoc);
       } catch {}
     });
@@ -1018,7 +1039,7 @@
 
   function initIframeInspection(idoc) {
     iframeHighlight = idoc.createElement("div");
-    iframeHighlight.style.cssText = "position:absolute;pointer-events:none;z-index:2147483646;" +
+    iframeHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;" +
       "outline:1.5px solid #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.08);" +
       "border-radius:2px;transition:all 0.08s ease;display:none;";
     idoc.body.appendChild(iframeHighlight);
@@ -1069,11 +1090,9 @@
     if (!iframeHighlight) return;
     try {
       const r = el.getBoundingClientRect();
-      const scrollX = idoc.defaultView.scrollX;
-      const scrollY = idoc.defaultView.scrollY;
       iframeHighlight.style.display = "block";
-      iframeHighlight.style.left = (r.left + scrollX) + "px";
-      iframeHighlight.style.top = (r.top + scrollY) + "px";
+      iframeHighlight.style.left = r.left + "px";
+      iframeHighlight.style.top = r.top + "px";
       iframeHighlight.style.width = r.width + "px";
       iframeHighlight.style.height = r.height + "px";
     } catch {}
@@ -1089,23 +1108,13 @@
 
   function applyDeviceSize() {
     if (!deviceFrame) return;
-    const w = DEVICE.w;
-    const h = DEVICE.h;
-
-    const iframe = deviceFrame.querySelector("#__looker_device_iframe__");
-    if (iframe) {
-      iframe.style.width = w + "px";
-      iframe.style.height = h + "px";
-    }
-    deviceFrame.style.width = (w + 24) + "px";
-    deviceFrame.style.height = (h + 80) + "px";
+    deviceFrame.style.width = FRAME.w + "px";
+    deviceFrame.style.height = FRAME.h + "px";
 
     const panelWidth = sidebarWidth;
     const maxW = window.innerWidth - panelWidth;
     const maxH = window.innerHeight - 40;
-    const frameW = w + 24;
-    const frameH = h + 80;
-    const scale = Math.min(1, maxW / frameW, maxH / frameH);
+    const scale = Math.min(1, maxW / FRAME.w, maxH / FRAME.h);
     const panelOffset = Math.round(sidebarWidth / 2);
     deviceFrame.style.left = `calc(50% - ${panelOffset}px)`;
     deviceFrame.style.transform = `translate(-50%, -50%) scale(${scale})`;

@@ -27,5 +27,9 @@
   },
   "action": {
     "default_title": "Toggle Looker Inspector"
-  }
+  },
+  "web_accessible_resources": [{
+    "resources": ["assets/iphone-frame.png"],
+    "matches": ["<all_urls>"]
+  }]
 }
