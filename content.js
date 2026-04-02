@@ -12,6 +12,7 @@
   let highlightBox = null;
   let panel = null;
   let escListener = null;
+  let hoverEnabled = true;
   const changedStyles = new Map();
 
   let sidebarWidth = 280;
@@ -54,6 +55,7 @@
   // ─── Activate ──────────────────────────────────────────────────────────────
   function activate() {
     inspectorActive = true;
+    hoverEnabled = true;
     createHighlightBox();
     createPanel();
     document.addEventListener("mousemove", onMouseMove, true);
@@ -107,6 +109,7 @@
 
   function onMouseMove(e) {
     if (devicePreviewActive) return;
+    if (!hoverEnabled) return;
     if (pinnedElement) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (isLookerUI(el)) return;
@@ -117,6 +120,7 @@
 
   function onClick(e) {
     if (devicePreviewActive) return;
+    if (!hoverEnabled) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (isLookerUI(el)) return;
     e.preventDefault();
@@ -124,7 +128,7 @@
 
     if (pinnedElement === el) {
       pinnedElement = null;
-      document.body.style.cursor = "crosshair";
+      document.body.style.cursor = hoverEnabled ? "crosshair" : "";
     } else {
       pinnedElement = el;
       positionHighlight(el);
@@ -144,7 +148,12 @@
       <div class="__looker_panel_header__">
         <span class="__looker_logo__">◈ Looker</span>
         <div class="__looker_header_actions__">
-          <button class="__looker_device_toggle__" id="__looker_device_toggle__" title="Toggle device preview">
+          <button class="__looker_icon_toggle__ __looker_hover_active__" id="__looker_hover_toggle__" title="Toggle hover inspection">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 3l3.5 15.5 3-6.5 6.5-3L3 5z"/><path d="M14 14l7 7"/>
+            </svg>
+          </button>
+          <button class="__looker_icon_toggle__" id="__looker_device_toggle__" title="Toggle device preview">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
               <line x1="12" y1="18" x2="12" y2="18"/>
@@ -162,6 +171,7 @@
     panel.querySelector(".__looker_close__").addEventListener("click", deactivate);
     panel.querySelector("#__looker_copy_changes__").addEventListener("click", copyAllChanges);
     panel.querySelector("#__looker_device_toggle__").addEventListener("click", toggleDevicePreview);
+    panel.querySelector("#__looker_hover_toggle__").addEventListener("click", toggleHoverInspection);
     initResizeHandle();
   }
 
@@ -976,6 +986,37 @@
     document.documentElement.style.setProperty("--__looker-sidebar-w", sidebarWidth + "px");
   }
 
+  // ─── Hover Inspection Toggle ────────────────────────────────────────────────
+  function toggleHoverInspection() {
+    hoverEnabled = !hoverEnabled;
+    const btn = panel.querySelector("#__looker_hover_toggle__");
+    btn.classList.toggle("__looker_hover_active__", hoverEnabled);
+
+    if (!hoverEnabled) {
+      if (!pinnedElement && highlightBox) {
+        highlightBox.style.display = "none";
+      }
+      if (!iframePinnedElement && iframeHighlight) {
+        iframeHighlight.style.display = "none";
+      }
+      document.body.style.cursor = "";
+      try {
+        const iframe = document.getElementById("__looker_device_iframe__");
+        if (iframe?.contentDocument?.body) iframe.contentDocument.body.style.cursor = "";
+      } catch {}
+    } else {
+      if (highlightBox) highlightBox.style.display = "";
+      if (iframeHighlight) iframeHighlight.style.display = "";
+      if (!pinnedElement) document.body.style.cursor = "crosshair";
+      try {
+        const iframe = document.getElementById("__looker_device_iframe__");
+        if (iframe?.contentDocument?.body && !iframePinnedElement) {
+          iframe.contentDocument.body.style.cursor = "crosshair";
+        }
+      } catch {}
+    }
+  }
+
   // ─── Device Preview ─────────────────────────────────────────────────────────
   function toggleDevicePreview() {
     if (devicePreviewActive) {
@@ -1046,6 +1087,7 @@
     idoc.body.style.cursor = "crosshair";
 
     function onIframeMove(e) {
+      if (!hoverEnabled) return;
       if (iframePinnedElement) return;
       const el = idoc.elementFromPoint(e.clientX, e.clientY);
       if (!el || el === iframeHighlight) return;
@@ -1054,6 +1096,7 @@
     }
 
     function onIframeClick(e) {
+      if (!hoverEnabled) return;
       const el = idoc.elementFromPoint(e.clientX, e.clientY);
       if (!el || el === iframeHighlight) return;
       e.preventDefault();
@@ -1061,7 +1104,7 @@
 
       if (iframePinnedElement === el) {
         iframePinnedElement = null;
-        idoc.body.style.cursor = "crosshair";
+        idoc.body.style.cursor = hoverEnabled ? "crosshair" : "";
         iframeHighlight.style.outline = "1.5px solid #18a0fb";
         iframeHighlight.style.background = "rgba(24,160,251,0.08)";
       } else {

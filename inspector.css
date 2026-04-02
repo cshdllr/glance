@@ -686,7 +686,7 @@
 }
 
 /* ─── Device Toggle Button ──────────────────────────────────────────────── */
-.__looker_device_toggle__ {
+.__looker_icon_toggle__ {
   background: none;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
@@ -699,11 +699,12 @@
   align-items: center;
   justify-content: center;
 }
-.__looker_device_toggle__:hover {
+.__looker_icon_toggle__:hover {
   color: #cdd6f4;
   border-color: rgba(255,255,255,0.15);
 }
-.__looker_device_toggle__.__looker_device_active__ {
+.__looker_icon_toggle__.__looker_device_active__,
+.__looker_icon_toggle__.__looker_hover_active__ {
   color: #89b4fa;
   border-color: rgba(137, 180, 250, 0.4);
   background: rgba(137, 180, 250, 0.1);
