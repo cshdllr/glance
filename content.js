@@ -14,12 +14,8 @@
   let escListener = null;
   const changedStyles = new Map();
 
-  // Layout mode: "sidebar" (default) or "float"
-  let layoutMode = "sidebar";
   let sidebarWidth = 280;
   try {
-    const saved = localStorage.getItem("__looker_layout_mode__");
-    if (saved === "float" || saved === "sidebar") layoutMode = saved;
     const savedW = parseInt(localStorage.getItem("__looker_sidebar_w__"), 10);
     if (savedW >= 200 && savedW <= 600) sidebarWidth = savedW;
   } catch {}
@@ -140,18 +136,13 @@
   function createPanel() {
     panel = document.createElement("div");
     panel.id = "__looker_panel__";
-    applyLayoutMode();
+    applySidebarWidth(sidebarWidth);
+    document.documentElement.classList.add("__looker_sidebar_active__");
     panel.innerHTML = `
       <div class="__looker_resize_handle__" id="__looker_resize_handle__"></div>
       <div class="__looker_panel_header__">
         <span class="__looker_logo__">◈ Looker</span>
         <div class="__looker_header_actions__">
-          <button class="__looker_layout_toggle__ ${layoutMode === "sidebar" ? "__looker_layout_sidebar__" : ""}" id="__looker_layout_toggle__" title="Toggle sidebar / float">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2"/>
-              <line x1="15" y1="3" x2="15" y2="21"/>
-            </svg>
-          </button>
           <button class="__looker_device_toggle__" id="__looker_device_toggle__" title="Toggle device preview">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
@@ -169,10 +160,8 @@
     document.body.appendChild(panel);
     panel.querySelector(".__looker_close__").addEventListener("click", deactivate);
     panel.querySelector("#__looker_copy_changes__").addEventListener("click", copyAllChanges);
-    panel.querySelector("#__looker_layout_toggle__").addEventListener("click", toggleLayoutMode);
     panel.querySelector("#__looker_device_toggle__").addEventListener("click", toggleDevicePreview);
     initResizeHandle();
-    if (layoutMode === "float") makeDraggable(panel);
   }
 
   function renderPanel(el) {
@@ -217,9 +206,32 @@
       layoutFields.push(field("Cols", cs.gridTemplateColumns, "grid-template-columns", true));
     }
 
+    const hasParent = el.parentElement && el.parentElement !== el.ownerDocument.documentElement && el.parentElement !== el.ownerDocument.body;
+    const children = Array.from(el.children).filter(c =>
+      !c.id?.startsWith("__looker_") && !c.classList?.contains("__looker_highlight__")
+    );
+
     body.innerHTML = `
       ${section("Element", `
         <div class="__looker_selector__">&lt;${tag}${elId}${classes}&gt;</div>
+        <div class="__looker_dom_nav__">
+          <button class="__looker_dom_nav_btn__" id="__looker_nav_parent__" ${hasParent ? "" : "disabled"} title="Select parent element">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,6 5,3 8,6"/></svg>
+            <span>${hasParent ? "&lt;" + el.parentElement.tagName.toLowerCase() + "&gt;" : "—"}</span>
+          </button>
+          ${children.length ? `<div class="__looker_dom_children__">
+            ${children.slice(0, 12).map((c, i) => {
+              const cTag = c.tagName.toLowerCase();
+              const cId = c.id ? "#" + c.id : "";
+              const cCls = c.classList.length ? "." + Array.from(c.classList).slice(0,1).join(".") : "";
+              return `<button class="__looker_dom_nav_btn__ __looker_dom_child_btn__" data-child-idx="${i}" title="Select child element">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,4 5,7 8,4"/></svg>
+                <span>&lt;${cTag}${cId}${cCls}&gt;</span>
+              </button>`;
+            }).join("")}
+            ${children.length > 12 ? `<span class="__looker_dom_more__">+${children.length - 12} more</span>` : ""}
+          </div>` : ""}
+        </div>
       `)}
 
       ${classList.length ? section("Classes", `
@@ -305,7 +317,32 @@
 
     attachFieldHandlers(body, el);
     attachClassPillHandlers(body, el);
+    attachDomNavHandlers(body, el, children, hasParent);
     updateCopyChangesButton();
+  }
+
+  function selectElement(el) {
+    pinnedElement = el;
+    positionHighlight(el);
+    renderPanel(el);
+    document.body.style.cursor = "default";
+  }
+
+  function attachDomNavHandlers(container, el, children, hasParent) {
+    const parentBtn = container.querySelector("#__looker_nav_parent__");
+    if (parentBtn && hasParent) {
+      parentBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        selectElement(el.parentElement);
+      });
+    }
+    container.querySelectorAll(".__looker_dom_child_btn__").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const idx = parseInt(btn.dataset.childIdx, 10);
+        if (children[idx]) selectElement(children[idx]);
+      });
+    });
   }
 
   function attachFieldHandlers(container, targetEl) {
@@ -916,48 +953,10 @@
     return results;
   }
 
-  // ─── Layout Mode ────────────────────────────────────────────────────────────
-  function applyLayoutMode() {
-    if (!panel) return;
-    panel.classList.remove("__looker_mode_sidebar__", "__looker_mode_float__");
-    panel.classList.add(layoutMode === "sidebar" ? "__looker_mode_sidebar__" : "__looker_mode_float__");
-
-    if (layoutMode === "sidebar") {
-      panel.style.left = "";
-      panel.style.top = "";
-      panel.style.right = "";
-      panel.style.bottom = "";
-      applySidebarWidth(sidebarWidth);
-      document.documentElement.classList.add("__looker_sidebar_active__");
-    } else {
-      panel.style.width = "";
-      document.documentElement.style.removeProperty("--__looker-sidebar-w");
-      document.documentElement.classList.remove("__looker_sidebar_active__");
-    }
-  }
-
   function applySidebarWidth(w) {
     sidebarWidth = Math.max(200, Math.min(600, w));
     if (panel) panel.style.width = sidebarWidth + "px";
     document.documentElement.style.setProperty("--__looker-sidebar-w", sidebarWidth + "px");
-  }
-
-  function toggleLayoutMode() {
-    layoutMode = layoutMode === "sidebar" ? "float" : "sidebar";
-    try { localStorage.setItem("__looker_layout_mode__", layoutMode); } catch {}
-    applyLayoutMode();
-
-    const toggleBtn = document.getElementById("__looker_layout_toggle__");
-    if (toggleBtn) {
-      toggleBtn.classList.toggle("__looker_layout_sidebar__", layoutMode === "sidebar");
-    }
-
-    // Enable/disable dragging
-    if (layoutMode === "float") {
-      makeDraggable(panel);
-    }
-
-    showToast(layoutMode === "sidebar" ? "Sidebar mode" : "Float mode");
   }
 
   // ─── Device Preview ─────────────────────────────────────────────────────────
@@ -1101,13 +1100,13 @@
     deviceFrame.style.width = (w + 24) + "px";
     deviceFrame.style.height = (h + 80) + "px";
 
-    const panelWidth = layoutMode === "sidebar" ? sidebarWidth : 320;
+    const panelWidth = sidebarWidth;
     const maxW = window.innerWidth - panelWidth;
     const maxH = window.innerHeight - 40;
     const frameW = w + 24;
     const frameH = h + 80;
     const scale = Math.min(1, maxW / frameW, maxH / frameH);
-    const panelOffset = layoutMode === "sidebar" ? Math.round(sidebarWidth / 2) : 140;
+    const panelOffset = Math.round(sidebarWidth / 2);
     deviceFrame.style.left = `calc(50% - ${panelOffset}px)`;
     deviceFrame.style.transform = `translate(-50%, -50%) scale(${scale})`;
   }
@@ -1199,7 +1198,6 @@
     const handle = document.getElementById("__looker_resize_handle__");
     if (!handle) return;
     handle.addEventListener("mousedown", (e) => {
-      if (layoutMode !== "sidebar") return;
       e.preventDefault();
       const startX = e.clientX;
       const startW = sidebarWidth;
@@ -1218,32 +1216,6 @@
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
         try { localStorage.setItem("__looker_sidebar_w__", String(sidebarWidth)); } catch {}
-      };
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-    });
-  }
-
-  // ─── Drag ──────────────────────────────────────────────────────────────────
-  function makeDraggable(el) {
-    const header = el.querySelector(".__looker_panel_header__");
-    let ox = 0, oy = 0, mx = 0, my = 0;
-    header.addEventListener("mousedown", (e) => {
-      if (layoutMode !== "float") return;
-      if (e.target.closest("button")) return;
-      e.preventDefault();
-      mx = e.clientX; my = e.clientY;
-      const r = el.getBoundingClientRect();
-      ox = r.left; oy = r.top;
-      const onMove = (e) => {
-        el.style.left = (ox + e.clientX - mx) + "px";
-        el.style.top = (oy + e.clientY - my) + "px";
-        el.style.right = "auto";
-        el.style.bottom = "auto";
-      };
-      const onUp = () => {
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
