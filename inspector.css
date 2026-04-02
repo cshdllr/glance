@@ -451,6 +451,131 @@
   border-color: #89b4fa;
 }
 
+/* ─── Scrub / enum label cursors ─────────────────────────────────────────── */
+.__looker_field_label__[data-scrub] {
+  cursor: ew-resize;
+  user-select: none;
+}
+.__looker_field_label__[data-enum] {
+  cursor: pointer;
+  user-select: none;
+}
+.__looker_field_label__.__looker_scrubbing__ {
+  color: #89b4fa;
+}
+.__looker_color_preview__ {
+  cursor: pointer;
+}
+
+/* ─── Enum dropdown ─────────────────────────────────────────────────────── */
+.__looker_enum_dropdown__ {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #262637;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  margin-top: 2px;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  scrollbar-width: thin;
+  scrollbar-color: #313244 transparent;
+}
+.__looker_enum_dropdown__::-webkit-scrollbar { width: 4px; }
+.__looker_enum_dropdown__::-webkit-scrollbar-track { background: transparent; }
+.__looker_enum_dropdown__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+
+.__looker_enum_option__ {
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #cdd6f4;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.__looker_enum_option__:hover {
+  background: rgba(137, 180, 250, 0.12);
+  color: #fff;
+}
+.__looker_enum_option__.__looker_enum_active__ {
+  background: rgba(137, 180, 250, 0.18);
+  color: #89b4fa;
+  font-weight: 500;
+}
+
+/* ─── Color picker popover ──────────────────────────────────────────────── */
+.__looker_color_picker__ {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 100;
+  background: #1e1e2e;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  margin-top: 4px;
+  padding: 8px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  width: 236px;
+}
+
+.__looker_cp_sv__ {
+  display: block;
+  width: 220px;
+  height: 140px;
+  border-radius: 4px;
+  cursor: crosshair;
+}
+
+.__looker_cp_sliders__ {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.__looker_cp_hue__,
+.__looker_cp_alpha__ {
+  display: block;
+  width: 220px;
+  height: 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.__looker_cp_inputs__ {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.__looker_cp_preview_swatch__ {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+
+.__looker_cp_hex_input__ {
+  background: #262637;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  color: #cdd6f4;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  font-size: 11px;
+  padding: 4px 8px;
+  flex: 1;
+  outline: none;
+  min-width: 0;
+}
+.__looker_cp_hex_input__:focus {
+  border-color: #89b4fa;
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
+}
+
 /* ─── Color swatch ───────────────────────────────────────────────────────── */
 .__looker_swatch__ {
   display: inline-block;

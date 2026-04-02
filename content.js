@@ -29,6 +29,22 @@
   let deviceFrame = null;
   const DEVICE = { name: "iPhone 15", w: 393, h: 852 };
 
+  // ─── Field type lookups ────────────────────────────────────────────────────
+  const ENUM_PROPS = {
+    "display": ["block","inline","inline-block","flex","inline-flex","grid","inline-grid","none"],
+    "position": ["static","relative","absolute","fixed","sticky"],
+    "text-align": ["left","center","right","justify"],
+    "overflow": ["visible","hidden","scroll","auto","clip"],
+    "flex-direction": ["row","row-reverse","column","column-reverse"],
+    "align-items": ["stretch","flex-start","flex-end","center","baseline"],
+    "justify-content": ["flex-start","flex-end","center","space-between","space-around","space-evenly"],
+    "font-weight": ["100","200","300","400","500","600","700","800","900"],
+    "visibility": ["visible","hidden","collapse"],
+  };
+  const RANGE_PROPS = {
+    "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
+  };
+
   window.__lookerToggle = function() {
     inspectorActive ? deactivate() : activate();
   };
@@ -309,6 +325,389 @@
         });
       }
     });
+
+    // Label interactions: scrub + dropdown
+    container.querySelectorAll(".__looker_field_label__").forEach(lbl => {
+      const fieldType = lbl.dataset.fieldtype;
+      const valEl = lbl.nextElementSibling;
+      if (!valEl) return;
+      const cssProp = valEl.dataset.cssprop;
+      if (!cssProp) return;
+
+      if (fieldType === "numeric" || fieldType === "range") {
+        lbl.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          startScrub(e, lbl, valEl, cssProp, targetEl, fieldType);
+        });
+      } else if (fieldType === "enum") {
+        lbl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          showEnumDropdown(lbl, valEl, cssProp, targetEl);
+        });
+      }
+    });
+
+    // Color swatch click -> color picker
+    container.querySelectorAll(".__looker_color_preview__").forEach(swatch => {
+      const colorField = swatch.closest(".__looker_color_field__");
+      if (!colorField) return;
+      const hexEl = colorField.querySelector(".__looker_color_hex__");
+      if (!hexEl) return;
+      const cssProp = hexEl.dataset.cssprop;
+      if (!cssProp) return;
+      swatch.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showColorPicker(swatch, hexEl, cssProp, targetEl);
+      });
+    });
+  }
+
+  // ─── Scrub (numeric + range) ───────────────────────────────────────────────
+  function startScrub(e, lbl, valEl, cssProp, targetEl, fieldType) {
+    const startX = e.clientX;
+    const raw = valEl.dataset.copy || valEl.textContent.trim();
+    const match = raw.match(/^(-?[\d.]+)(.*)$/);
+    if (!match) return;
+    const startNum = parseFloat(match[1]);
+    if (isNaN(startNum)) return;
+    const unit = match[2] || "";
+    const rangeDef = RANGE_PROPS[cssProp];
+
+    lbl.classList.add("__looker_scrubbing__");
+    document.body.style.cursor = "ew-resize";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev) => {
+      const delta = ev.clientX - startX;
+      let step, shiftStep;
+      if (rangeDef) {
+        step = rangeDef.step;
+        shiftStep = rangeDef.shiftStep;
+      } else {
+        step = 1;
+        shiftStep = 10;
+      }
+      const mult = ev.shiftKey ? shiftStep : step;
+      let newVal = startNum + delta * mult;
+      if (rangeDef) newVal = Math.max(rangeDef.min, Math.min(rangeDef.max, newVal));
+      newVal = Math.round(newVal * 1000) / 1000;
+      const newStr = newVal + unit;
+      valEl.textContent = newStr;
+      valEl.dataset.copy = newStr;
+      applyChange(targetEl, cssProp, raw, newStr);
+      positionHighlight(targetEl);
+    };
+
+    const onUp = () => {
+      lbl.classList.remove("__looker_scrubbing__");
+      document.body.style.cursor = pinnedElement ? "default" : "crosshair";
+      document.body.style.userSelect = "";
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }
+
+  // ─── Enum dropdown ─────────────────────────────────────────────────────────
+  let activeDropdown = null;
+
+  function dismissDropdown() {
+    if (activeDropdown) { activeDropdown.remove(); activeDropdown = null; }
+    document.removeEventListener("click", onDropdownOutsideClick, true);
+  }
+
+  function onDropdownOutsideClick(e) {
+    if (activeDropdown && !activeDropdown.contains(e.target)) {
+      dismissDropdown();
+    }
+  }
+
+  function showEnumDropdown(lbl, valEl, cssProp, targetEl) {
+    dismissDropdown();
+    const options = ENUM_PROPS[cssProp];
+    if (!options) return;
+    const currentVal = valEl.dataset.copy || valEl.textContent.trim();
+
+    const dd = document.createElement("div");
+    dd.className = "__looker_enum_dropdown__";
+    options.forEach(opt => {
+      const item = document.createElement("div");
+      item.className = "__looker_enum_option__";
+      if (opt === currentVal) item.classList.add("__looker_enum_active__");
+      item.textContent = opt;
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        applyChange(targetEl, cssProp, currentVal, opt);
+        dismissDropdown();
+        renderPanel(targetEl);
+      });
+      dd.appendChild(item);
+    });
+
+    const fieldEl = lbl.closest(".__looker_field__");
+    if (!fieldEl) return;
+    fieldEl.style.position = "relative";
+    fieldEl.appendChild(dd);
+    activeDropdown = dd;
+
+    setTimeout(() => document.addEventListener("click", onDropdownOutsideClick, true), 0);
+  }
+
+  // ─── Color Picker ──────────────────────────────────────────────────────────
+  let activeColorPicker = null;
+
+  function dismissColorPicker() {
+    if (activeColorPicker) { activeColorPicker.remove(); activeColorPicker = null; }
+    document.removeEventListener("click", onPickerOutsideClick, true);
+    document.removeEventListener("keydown", onPickerEscape, true);
+  }
+
+  function onPickerOutsideClick(e) {
+    if (activeColorPicker && !activeColorPicker.contains(e.target)) {
+      dismissColorPicker();
+    }
+  }
+
+  function onPickerEscape(e) {
+    if (e.key === "Escape") { dismissColorPicker(); e.stopPropagation(); }
+  }
+
+  function rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0, s = max === 0 ? 0 : d / max, v = max;
+    if (d !== 0) {
+      if (max === r) h = ((g - b) / d + 6) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return { h, s, v };
+  }
+
+  function hsvToRgb(h, s, v) {
+    const c = v * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = v - c;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    return {
+      r: Math.round((r + m) * 255),
+      g: Math.round((g + m) * 255),
+      b: Math.round((b + m) * 255)
+    };
+  }
+
+  function parseColorToRgba(color) {
+    const m = color.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+    if (m) return { r: +m[1], g: +m[2], b: +m[3], a: m[4] !== undefined ? parseFloat(m[4]) : 1 };
+    if (/^#[0-9a-f]{6}$/i.test(color)) {
+      return { r: parseInt(color.slice(1,3),16), g: parseInt(color.slice(3,5),16), b: parseInt(color.slice(5,7),16), a: 1 };
+    }
+    return { r: 0, g: 0, b: 0, a: 1 };
+  }
+
+  function showColorPicker(swatch, hexEl, cssProp, targetEl) {
+    dismissColorPicker();
+    dismissDropdown();
+
+    const rawColor = hexEl.dataset.copy || hexEl.textContent.trim();
+    const rgba = parseColorToRgba(rawColor);
+    const hsv = rgbToHsv(rgba.r, rgba.g, rgba.b);
+    let state = { h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a };
+
+    const picker = document.createElement("div");
+    picker.className = "__looker_color_picker__";
+    picker.innerHTML = `
+      <canvas class="__looker_cp_sv__" width="220" height="140"></canvas>
+      <div class="__looker_cp_sliders__">
+        <canvas class="__looker_cp_hue__" width="220" height="12"></canvas>
+        <canvas class="__looker_cp_alpha__" width="220" height="12"></canvas>
+      </div>
+      <div class="__looker_cp_inputs__">
+        <div class="__looker_cp_preview_swatch__"></div>
+        <input class="__looker_cp_hex_input__" type="text" spellcheck="false" />
+      </div>
+    `;
+
+    const colorField = swatch.closest(".__looker_color_field__");
+    if (!colorField) return;
+    colorField.style.position = "relative";
+    colorField.appendChild(picker);
+    activeColorPicker = picker;
+
+    const svCanvas = picker.querySelector(".__looker_cp_sv__");
+    const hueCanvas = picker.querySelector(".__looker_cp_hue__");
+    const alphaCanvas = picker.querySelector(".__looker_cp_alpha__");
+    const hexInput = picker.querySelector(".__looker_cp_hex_input__");
+    const previewSwatch = picker.querySelector(".__looker_cp_preview_swatch__");
+
+    function outputColor() {
+      const rgb = hsvToRgb(state.h, state.s, state.v);
+      if (state.a < 1) {
+        return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${Math.round(state.a * 100) / 100})`;
+      }
+      return `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    }
+
+    function hexFromState() {
+      const rgb = hsvToRgb(state.h, state.s, state.v);
+      return "#" + [rgb.r, rgb.g, rgb.b].map(n => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+    }
+
+    function applyColor() {
+      const color = outputColor();
+      swatch.style.background = color;
+      previewSwatch.style.background = color;
+      hexInput.value = hexFromState();
+      applyChange(targetEl, cssProp, rawColor, color);
+    }
+
+    function drawSV() {
+      const ctx = svCanvas.getContext("2d");
+      const w = svCanvas.width, h = svCanvas.height;
+      const hueRgb = hsvToRgb(state.h, 1, 1);
+      ctx.fillStyle = `rgb(${hueRgb.r},${hueRgb.g},${hueRgb.b})`;
+      ctx.fillRect(0, 0, w, h);
+      const wGrad = ctx.createLinearGradient(0, 0, w, 0);
+      wGrad.addColorStop(0, "rgba(255,255,255,1)");
+      wGrad.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = wGrad;
+      ctx.fillRect(0, 0, w, h);
+      const bGrad = ctx.createLinearGradient(0, 0, 0, h);
+      bGrad.addColorStop(0, "rgba(0,0,0,0)");
+      bGrad.addColorStop(1, "rgba(0,0,0,1)");
+      ctx.fillStyle = bGrad;
+      ctx.fillRect(0, 0, w, h);
+      // thumb
+      const tx = state.s * w, ty = (1 - state.v) * h;
+      ctx.beginPath();
+      ctx.arc(tx, ty, 5, 0, Math.PI * 2);
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    function drawHue() {
+      const ctx = hueCanvas.getContext("2d");
+      const w = hueCanvas.width, h = hueCanvas.height;
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      for (let i = 0; i <= 6; i++) {
+        const rgb = hsvToRgb(i * 60, 1, 1);
+        grad.addColorStop(i / 6, `rgb(${rgb.r},${rgb.g},${rgb.b})`);
+      }
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      const tx = (state.h / 360) * w;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(tx - 2, 0, 4, h);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(tx - 2, 0, 4, h);
+    }
+
+    function drawAlpha() {
+      const ctx = alphaCanvas.getContext("2d");
+      const w = alphaCanvas.width, h = alphaCanvas.height;
+      // checkerboard
+      ctx.fillStyle = "#2a2a3a";
+      ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = "#3a3a4a";
+      for (let x = 0; x < w; x += 6) {
+        for (let y = 0; y < h; y += 6) {
+          if ((Math.floor(x / 6) + Math.floor(y / 6)) % 2 === 0) ctx.fillRect(x, y, 6, 6);
+        }
+      }
+      const rgb = hsvToRgb(state.h, state.s, state.v);
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+      grad.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},1)`);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      const tx = state.a * w;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(tx - 2, 0, 4, h);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(tx - 2, 0, 4, h);
+    }
+
+    function redraw() { drawSV(); drawHue(); drawAlpha(); }
+
+    function canvasDrag(canvas, onDrag) {
+      const handler = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        const y = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        onDrag(x, y);
+      };
+      canvas.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handler(e);
+        const onMove = (ev) => handler(ev);
+        const onUp = () => { document.removeEventListener("mousemove", onMove); document.removeEventListener("mouseup", onUp); };
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      });
+    }
+
+    canvasDrag(svCanvas, (x, y) => {
+      state.s = x;
+      state.v = 1 - y;
+      redraw();
+      applyColor();
+    });
+
+    canvasDrag(hueCanvas, (x) => {
+      state.h = x * 360;
+      redraw();
+      applyColor();
+    });
+
+    canvasDrag(alphaCanvas, (x) => {
+      state.a = x;
+      redraw();
+      applyColor();
+    });
+
+    hexInput.value = hexFromState();
+    hexInput.addEventListener("input", () => {
+      const val = hexInput.value.trim();
+      if (/^#?[0-9a-f]{6}$/i.test(val)) {
+        const hex = val.startsWith("#") ? val : "#" + val;
+        const rgba2 = parseColorToRgba(hex);
+        const hsv2 = rgbToHsv(rgba2.r, rgba2.g, rgba2.b);
+        state.h = hsv2.h; state.s = hsv2.s; state.v = hsv2.v;
+        redraw();
+        applyColor();
+      }
+    });
+    hexInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { dismissColorPicker(); e.preventDefault(); }
+      if (e.key === "Escape") { dismissColorPicker(); e.preventDefault(); }
+      e.stopPropagation();
+    });
+    hexInput.addEventListener("click", (e) => e.stopPropagation());
+
+    previewSwatch.style.background = outputColor();
+    redraw();
+
+    setTimeout(() => {
+      document.addEventListener("click", onPickerOutsideClick, true);
+      document.addEventListener("keydown", onPickerEscape, true);
+    }, 0);
   }
 
   function attachValHandlers(container, targetEl) {
@@ -722,6 +1121,13 @@
       </div>`;
   }
 
+  function classifyField(cssProp, value) {
+    if (cssProp && RANGE_PROPS[cssProp]) return "range";
+    if (cssProp && ENUM_PROPS[cssProp]) return "enum";
+    if (value && /^-?[\d.]+/.test(value)) return "numeric";
+    return "";
+  }
+
   function field(label, value, cssProp, full) {
     if (!value || value === "" || value === "undefined") return "";
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
@@ -729,9 +1135,14 @@
       && changedStyles.get(pinnedElement).has(cssProp);
     const changedClass = isChanged ? " __looker_val_changed__" : "";
     const fullClass = full ? " __looker_field_full__" : "";
+    const fieldType = classifyField(cssProp, value);
+    const labelAttrs = [];
+    if (fieldType === "numeric" || fieldType === "range") labelAttrs.push('data-scrub');
+    if (fieldType === "enum") labelAttrs.push('data-enum');
+    if (fieldType) labelAttrs.push(`data-fieldtype="${fieldType}"`);
     return `
       <div class="__looker_field__${fullClass}">
-        <span class="__looker_field_label__">${label}</span>
+        <span class="__looker_field_label__" ${labelAttrs.join(" ")}>${label}</span>
         <span class="__looker_field_value__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
       </div>`;
   }
