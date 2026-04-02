@@ -60,6 +60,7 @@
     createPanel();
     document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("click", onClick, true);
+    document.addEventListener("scroll", onScroll, true);
     escListener = (e) => { if (e.key === "Escape") deactivate(); };
     document.addEventListener("keydown", escListener, true);
     document.body.style.cursor = "crosshair";
@@ -73,19 +74,43 @@
     hoveredElement = null;
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("click", onClick, true);
+    document.removeEventListener("scroll", onScroll, true);
     if (escListener) document.removeEventListener("keydown", escListener, true);
     document.body.style.cursor = "";
     document.documentElement.classList.remove("__looker_sidebar_active__");
     if (highlightBox) { highlightBox.remove(); highlightBox = null; }
+    if (hoverHighlight) { hoverHighlight.remove(); hoverHighlight = null; }
     if (panel) { panel.remove(); panel = null; }
     if (devicePreviewActive) disableDevicePreview();
   }
 
   // ─── Highlight box ─────────────────────────────────────────────────────────
+  function elementLabel(el) {
+    const tag = el.tagName.toLowerCase();
+    const id = el.id ? "#" + el.id : "";
+    const cls = el.classList.length
+      ? "." + Array.from(el.classList).filter(c => !c.startsWith("__looker_")).slice(0, 2).join(".")
+      : "";
+    return tag + id + cls;
+  }
+
+  let hoverHighlight = null;
+
   function createHighlightBox() {
     highlightBox = document.createElement("div");
     highlightBox.id = "__looker_highlight__";
+    highlightBox.classList.add("__looker_pinned__");
+    const label = document.createElement("span");
+    label.id = "__looker_highlight_label__";
+    highlightBox.appendChild(label);
     document.body.appendChild(highlightBox);
+
+    hoverHighlight = document.createElement("div");
+    hoverHighlight.id = "__looker_hover_highlight__";
+    const hoverLabel = document.createElement("span");
+    hoverLabel.id = "__looker_hover_highlight_label__";
+    hoverHighlight.appendChild(hoverLabel);
+    document.body.appendChild(hoverHighlight);
   }
 
   function positionHighlight(el) {
@@ -97,25 +122,56 @@
     highlightBox.style.top = (r.top + scrollY) + "px";
     highlightBox.style.width = r.width + "px";
     highlightBox.style.height = r.height + "px";
-    highlightBox.classList.toggle("__looker_pinned__", el === pinnedElement);
+    highlightBox.style.display = "block";
+    highlightBox.classList.toggle("__looker_pinned__", !!pinnedElement);
+    const label = highlightBox.querySelector("#__looker_highlight_label__");
+    if (label) label.textContent = elementLabel(el);
+  }
+
+  function positionHoverHighlight(el) {
+    if (!hoverHighlight || !el) return;
+    if (el === pinnedElement) {
+      hoverHighlight.style.display = "none";
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    hoverHighlight.style.left = (r.left + scrollX) + "px";
+    hoverHighlight.style.top = (r.top + scrollY) + "px";
+    hoverHighlight.style.width = r.width + "px";
+    hoverHighlight.style.height = r.height + "px";
+    hoverHighlight.style.display = "block";
+    const label = hoverHighlight.querySelector("#__looker_hover_highlight_label__");
+    if (label) label.textContent = elementLabel(el);
+  }
+
+  function hideHoverHighlight() {
+    if (hoverHighlight) hoverHighlight.style.display = "none";
   }
 
   // ─── Events ────────────────────────────────────────────────────────────────
   function isLookerUI(el) {
-    return !el || el.id === "__looker_highlight__"
+    return !el || el.id === "__looker_highlight__" || el.id === "__looker_hover_highlight__"
       || el.closest("#__looker_panel__")
       || el.closest("#__looker_device_frame__");
   }
 
   function onMouseMove(e) {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
-    if (pinnedElement) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (isLookerUI(el)) return;
-    hoveredElement = el;
-    positionHighlight(el);
-    renderPanel(el);
+
+    if (pinnedElement) {
+      positionHoverHighlight(el);
+    } else {
+      hoveredElement = el;
+      positionHighlight(el);
+      renderPanel(el);
+    }
   }
 
   function onClick(e) {
@@ -128,12 +184,32 @@
 
     if (pinnedElement === el) {
       pinnedElement = null;
+      hideHoverHighlight();
+      highlightBox.classList.remove("__looker_pinned__");
       document.body.style.cursor = hoverEnabled ? "crosshair" : "";
     } else {
       pinnedElement = el;
+      hideHoverHighlight();
       positionHighlight(el);
       renderPanel(el);
       document.body.style.cursor = "default";
+    }
+  }
+
+  let lastMouseX = 0, lastMouseY = 0;
+
+  function onScroll() {
+    if (pinnedElement) positionHighlight(pinnedElement);
+    if (hoverEnabled) {
+      const el = document.elementFromPoint(lastMouseX, lastMouseY);
+      if (el && !isLookerUI(el)) {
+        if (pinnedElement) {
+          positionHoverHighlight(el);
+        } else {
+          hoveredElement = el;
+          positionHighlight(el);
+        }
+      }
     }
   }
 
@@ -148,9 +224,11 @@
       <div class="__looker_panel_header__">
         <span class="__looker_logo__">◈ Looker</span>
         <div class="__looker_header_actions__">
+          <button class="__looker_copy_changes__" id="__looker_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
           <button class="__looker_icon_toggle__ __looker_hover_active__" id="__looker_hover_toggle__" title="Toggle hover inspection">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 3l3.5 15.5 3-6.5 6.5-3L3 5z"/><path d="M14 14l7 7"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 12.5886C12 12.2698 12.25 12 12.575 12C12.7 12 12.85 12.0736 12.95 12.1471L19.8 18.1312C19.925 18.2293 20 18.3764 20 18.5236C20 18.8424 19.75 19.0631 19.425 19.0631H16.475L17.9 21.8589C18.1 22.2513 17.95 22.7173 17.55 22.9135C17.15 23.1097 16.675 22.9625 16.475 22.5701L15.025 19.7007L12.95 22.0306C12.85 22.1532 12.7 22.2023 12.55 22.2023C12.225 22.2023 12 21.9815 12 21.6627V12.5886Z" fill="currentColor"/>
+              <path d="M18 5C19.0937 5 20 5.90624 20 7V17C20 17.1338 19.9853 17.264 19.9609 17.3896L19 16.5938V9H5V17C5 17.5625 5.4375 18 6 18H11.4688V19H6C4.875 19 4 18.125 4 17V7C4.00003 5.90624 4.87502 5 6 5H18ZM6 6C5.43752 6 5.00004 6.46876 5 7V8H8V6H6ZM9 8H19V7C19 6.46876 18.5312 6 18 6H9V8Z" fill="currentColor"/>
             </svg>
           </button>
           <button class="__looker_icon_toggle__" id="__looker_device_toggle__" title="Toggle device preview">
@@ -159,7 +237,6 @@
               <line x1="12" y1="18" x2="12" y2="18"/>
             </svg>
           </button>
-          <button class="__looker_copy_changes__" id="__looker_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
           <button class="__looker_close__" title="Close (Esc)">✕</button>
         </div>
       </div>
@@ -996,6 +1073,7 @@
       if (!pinnedElement && highlightBox) {
         highlightBox.style.display = "none";
       }
+      hideHoverHighlight();
       if (!iframePinnedElement && iframeHighlight) {
         iframeHighlight.style.display = "none";
       }
@@ -1081,10 +1159,22 @@
   function initIframeInspection(idoc) {
     iframeHighlight = idoc.createElement("div");
     iframeHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;" +
-      "outline:1.5px solid #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.08);" +
-      "border-radius:2px;transition:all 0.08s ease;display:none;";
+      "outline:1px dashed #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.04);" +
+      "border-radius:2px;transition:outline 0.08s ease,background 0.08s ease;display:none;";
+    const iframeLabel = idoc.createElement("span");
+    iframeLabel.style.cssText = "position:absolute;bottom:100%;left:-1px;background:#18a0fb;color:#fff;" +
+      "font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;font-size:10px;line-height:1;" +
+      "padding:3px 6px;border-radius:3px 3px 0 0;white-space:nowrap;max-width:200px;" +
+      "overflow:hidden;text-overflow:ellipsis;pointer-events:none;";
+    iframeLabel.id = "__looker_iframe_highlight_label__";
+    iframeHighlight.appendChild(iframeLabel);
     idoc.body.appendChild(iframeHighlight);
     idoc.body.style.cursor = "crosshair";
+
+    function updateIframeLabel(el) {
+      const lbl = iframeHighlight.querySelector("#__looker_iframe_highlight_label__");
+      if (lbl) lbl.textContent = elementLabel(el);
+    }
 
     function onIframeMove(e) {
       if (!hoverEnabled) return;
@@ -1092,6 +1182,7 @@
       const el = idoc.elementFromPoint(e.clientX, e.clientY);
       if (!el || el === iframeHighlight) return;
       positionIframeHighlight(el, idoc);
+      updateIframeLabel(el);
       renderPanel(el);
     }
 
@@ -1105,15 +1196,16 @@
       if (iframePinnedElement === el) {
         iframePinnedElement = null;
         idoc.body.style.cursor = hoverEnabled ? "crosshair" : "";
-        iframeHighlight.style.outline = "1.5px solid #18a0fb";
-        iframeHighlight.style.background = "rgba(24,160,251,0.08)";
+        iframeHighlight.style.outline = "1px dashed #18a0fb";
+        iframeHighlight.style.background = "rgba(24,160,251,0.04)";
       } else {
         iframePinnedElement = el;
         idoc.body.style.cursor = "default";
         positionIframeHighlight(el, idoc);
+        updateIframeLabel(el);
         renderPanel(el);
-        iframeHighlight.style.outline = "2px solid #ff6b6b";
-        iframeHighlight.style.background = "rgba(255,107,107,0.07)";
+        iframeHighlight.style.outline = "2px solid #18a0fb";
+        iframeHighlight.style.background = "rgba(24,160,251,0.06)";
       }
     }
 

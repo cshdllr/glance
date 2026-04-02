@@ -3,16 +3,51 @@
   position: absolute;
   pointer-events: none;
   z-index: 2147483646;
-  outline: 1.5px solid #18a0fb;
+  outline: 1px dashed #18a0fb;
   outline-offset: -1px;
-  background: rgba(24, 160, 251, 0.08);
+  background: rgba(24, 160, 251, 0.04);
   border-radius: 2px;
-  transition: all 0.08s ease;
+  transition: outline 0.08s ease, background 0.08s ease;
 }
 
 #__looker_highlight__.__looker_pinned__ {
-  outline: 2px solid #ff6b6b;
-  background: rgba(255, 107, 107, 0.07);
+  outline: 2px solid #18a0fb;
+  background: rgba(24, 160, 251, 0.06);
+}
+
+#__looker_highlight_label__,
+#__looker_hover_highlight_label__ {
+  position: absolute;
+  bottom: 100%;
+  left: -1px;
+  background: #18a0fb;
+  color: #fff;
+  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 3px 3px 0 0;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+#__looker_hover_highlight__ {
+  position: absolute;
+  pointer-events: none;
+  z-index: 2147483645;
+  outline: 1px dashed #18a0fb;
+  outline-offset: -1px;
+  background: rgba(24, 160, 251, 0.04);
+  border-radius: 2px;
+  transition: outline 0.08s ease, background 0.08s ease;
+  display: none;
+}
+
+html.__looker_device_mode__ #__looker_hover_highlight__ {
+  display: none !important;
 }
 
 /* ─── Panel ──────────────────────────────────────────────────────────────── */
