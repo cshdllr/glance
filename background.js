@@ -6,8 +6,8 @@ chrome.commands.onCommand.addListener((command) => {
       chrome.scripting.executeScript({
         target: { tabId: tabs[0].id },
         func: () => {
-          if (window.__lookerToggle) {
-            window.__lookerToggle();
+          if (window.__glanceToggle) {
+            window.__glanceToggle();
           }
         }
       });
@@ -20,8 +20,8 @@ chrome.action.onClicked.addListener((tab) => {
   chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: () => {
-      if (window.__lookerToggle) {
-        window.__lookerToggle();
+      if (window.__glanceToggle) {
+        window.__glanceToggle();
       }
     }
   });

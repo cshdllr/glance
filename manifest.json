@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Looker — Design Inspector",
+  "name": "Glance — Design Inspector",
   "version": "1.0.0",
   "description": "A Figma-style design inspector for any webpage. Click the toolbar icon or use Cmd+Shift+X.",
   "permissions": ["activeTab", "scripting"],
@@ -29,7 +29,7 @@
     "128": "assets/logo.png"
   },
   "action": {
-    "default_title": "Toggle Looker Inspector",
+    "default_title": "Toggle Glance Inspector",
     "default_icon": "assets/logo.png"
   },
   "web_accessible_resources": [{

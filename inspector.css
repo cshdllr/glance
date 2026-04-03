@@ -1,5 +1,5 @@
 /* ─── Highlight overlay ──────────────────────────────────────────────────── */
-#__looker_highlight__ {
+#__glance_highlight__ {
   position: absolute;
   pointer-events: none;
   z-index: 2147483646;
@@ -10,13 +10,13 @@
   transition: outline 0.08s ease, background 0.08s ease;
 }
 
-#__looker_highlight__.__looker_pinned__ {
+#__glance_highlight__.__glance_pinned__ {
   outline: 2px solid #18a0fb;
   background: rgba(24, 160, 251, 0.06);
 }
 
-#__looker_highlight_label__,
-#__looker_hover_highlight_label__ {
+#__glance_highlight_label__,
+#__glance_hover_highlight_label__ {
   position: absolute;
   bottom: 100%;
   left: -1px;
@@ -34,7 +34,7 @@
   pointer-events: none;
 }
 
-#__looker_hover_highlight__ {
+#__glance_hover_highlight__ {
   position: absolute;
   pointer-events: none;
   z-index: 2147483645;
@@ -46,12 +46,12 @@
   display: none;
 }
 
-html.__looker_device_mode__ #__looker_hover_highlight__ {
+html.__glance_device_mode__ #__glance_hover_highlight__ {
   display: none !important;
 }
 
 /* ─── Panel ──────────────────────────────────────────────────────────────── */
-#__looker_panel__ {
+#__glance_panel__ {
   position: fixed;
   z-index: 2147483647;
   top: 0;
@@ -70,7 +70,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Resize handle ──────────────────────────────────────────────────────── */
-.__looker_resize_handle__ {
+.__glance_resize_handle__ {
   position: absolute;
   top: 0;
   left: -3px;
@@ -79,12 +79,12 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   cursor: col-resize;
   z-index: 10;
 }
-.__looker_resize_handle__:hover,
-.__looker_resize_handle__.__looker_resizing__ {
+.__glance_resize_handle__:hover,
+.__glance_resize_handle__.__glance_resizing__ {
   background: rgba(137, 180, 250, 0.4);
 }
 /* ─── Header ─────────────────────────────────────────────────────────────── */
-.__looker_panel_header__ {
+.__glance_panel_header__ {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -96,20 +96,20 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   cursor: default;
 }
 
-.__looker_logo__ {
+.__glance_logo__ {
   font-size: 11px;
   font-weight: 600;
   color: #cba6f7;
   letter-spacing: 0.02em;
 }
 
-.__looker_header_actions__ {
+.__glance_header_actions__ {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.__looker_copy_changes__ {
+.__glance_copy_changes__ {
   background: none;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
@@ -123,20 +123,20 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   display: none;
 }
 
-.__looker_copy_changes__.__looker_has_changes__ {
+.__glance_copy_changes__.__glance_has_changes__ {
   display: block;
   color: #fab387;
   border-color: rgba(250, 179, 135, 0.3);
   background: rgba(250, 179, 135, 0.08);
 }
 
-.__looker_copy_changes__.__looker_has_changes__:hover {
+.__glance_copy_changes__.__glance_has_changes__:hover {
   background: rgba(250, 179, 135, 0.15);
   border-color: rgba(250, 179, 135, 0.5);
   color: #ffd0a8;
 }
 
-.__looker_close__ {
+.__glance_close__ {
   background: none;
   border: none;
   color: #585b70;
@@ -147,20 +147,20 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   transition: color 0.15s;
   border-radius: 4px;
 }
-.__looker_close__:hover { color: #cdd6f4; background: rgba(255,255,255,0.06); }
+.__glance_close__:hover { color: #cdd6f4; background: rgba(255,255,255,0.06); }
 
 /* ─── Body ───────────────────────────────────────────────────────────────── */
-.__looker_panel_body__ {
+.__glance_panel_body__ {
   overflow-y: auto;
   flex: 1;
   scrollbar-width: thin;
   scrollbar-color: #313244 transparent;
 }
-.__looker_panel_body__::-webkit-scrollbar { width: 4px; }
-.__looker_panel_body__::-webkit-scrollbar-track { background: transparent; }
-.__looker_panel_body__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+.__glance_panel_body__::-webkit-scrollbar { width: 4px; }
+.__glance_panel_body__::-webkit-scrollbar-track { background: transparent; }
+.__glance_panel_body__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
 
-.__looker_empty__ {
+.__glance_empty__ {
   padding: 32px 16px;
   color: #45475a;
   text-align: center;
@@ -169,13 +169,13 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
-.__looker_section__ {
+.__glance_section__ {
   border-bottom: 1px solid rgba(255,255,255,0.06);
   padding: 10px 12px;
   text-align: left;
 }
 
-.__looker_section_title__ {
+.__glance_section_title__ {
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0;
@@ -185,12 +185,12 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   text-align: left;
 }
 
-.__looker_section_content__ {
+.__glance_section_content__ {
   padding: 0;
 }
 
 /* ─── DOM tree ───────────────────────────────────────────────────────────── */
-.__looker_dom_tree__ {
+.__glance_dom_tree__ {
   display: flex;
   flex-direction: column;
   gap: 1px;
@@ -199,11 +199,11 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   line-height: 1.4;
 }
 
-.__looker_dom_tree_tag__ {
+.__glance_dom_tree_tag__ {
   word-break: break-all;
 }
 
-.__looker_dom_tree_item__ {
+.__glance_dom_tree_item__ {
   display: block;
   background: none;
   border: none;
@@ -216,12 +216,12 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   text-align: left;
   transition: background 0.1s, color 0.1s;
 }
-.__looker_dom_tree_item__:hover {
+.__glance_dom_tree_item__:hover {
   background: rgba(137, 180, 250, 0.08);
   color: #89b4fa;
 }
 
-.__looker_dom_tree_current__ {
+.__glance_dom_tree_current__ {
   padding: 4px 8px;
   margin-left: 12px;
   background: rgba(137, 180, 250, 0.1);
@@ -231,36 +231,36 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   border: 1px solid rgba(137, 180, 250, 0.4);
 }
 
-.__looker_dom_tree_children__ {
+.__glance_dom_tree_children__ {
   display: flex;
   flex-direction: column;
   gap: 1px;
   margin-left: 24px;
 }
 
-.__looker_dom_tree_children__ .__looker_dom_tree_item__ {
+.__glance_dom_tree_children__ .__glance_dom_tree_item__ {
   color: #6c7086;
   font-size: 9.5px;
   padding: 2px 6px;
 }
-.__looker_dom_tree_children__ .__looker_dom_tree_item__:hover {
+.__glance_dom_tree_children__ .__glance_dom_tree_item__:hover {
   color: #89b4fa;
 }
 
-.__looker_dom_more__ {
+.__glance_dom_more__ {
   font-size: 9px;
   color: #45475a;
   padding: 2px 6px;
 }
 
 /* ─── Figma-style field grid ─────────────────────────────────────────────── */
-.__looker_field_grid__ {
+.__glance_field_grid__ {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
 }
 
-.__looker_field__ {
+.__glance_field__ {
   display: flex;
   align-items: center;
   background: #262637;
@@ -271,15 +271,15 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   min-height: 28px;
   transition: border-color 0.12s;
 }
-.__looker_field__:hover {
+.__glance_field__:hover {
   border-color: rgba(255,255,255,0.12);
 }
 
-.__looker_field_full__ {
+.__glance_field_full__ {
   grid-column: 1 / -1;
 }
 
-.__looker_field_label__ {
+.__glance_field_label__ {
   font-size: 10px;
   color: #585b70;
   flex-shrink: 0;
@@ -287,7 +287,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   text-align: left;
 }
 
-.__looker_field_value__ {
+.__glance_field_value__ {
   font-size: 11px;
   color: #cdd6f4;
   flex: 1;
@@ -304,21 +304,21 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   align-items: center;
   gap: 5px;
 }
-.__looker_field_value__:hover {
+.__glance_field_value__:hover {
   background: rgba(255,255,255,0.06);
   color: #fff;
 }
-.__looker_field_value__.__looker_copied__ {
+.__glance_field_value__.__glance_copied__ {
   background: rgba(166, 227, 161, 0.15);
   color: #a6e3a1;
 }
-.__looker_field_value__.__looker_val_changed__ {
+.__glance_field_value__.__glance_val_changed__ {
   color: #fab387;
   background: rgba(250, 179, 135, 0.1);
 }
 
 /* ─── Icon button row (alignment, position, etc.) ────────────────────────── */
-.__looker_icon_row__ {
+.__glance_icon_row__ {
   display: flex;
   gap: 2px;
   background: #262637;
@@ -327,7 +327,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   padding: 2px;
 }
 
-.__looker_icon_btn__ {
+.__glance_icon_btn__ {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -342,24 +342,24 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   font-size: 11px;
   padding: 0;
 }
-.__looker_icon_btn__:hover {
+.__glance_icon_btn__:hover {
   background: rgba(255,255,255,0.06);
   color: #cdd6f4;
 }
-.__looker_icon_btn__.__looker_icon_active__ {
+.__glance_icon_btn__.__glance_icon_active__ {
   background: rgba(137, 180, 250, 0.12);
   color: #89b4fa;
 }
 
 /* ─── Classes ───────────────────────────────────────────────────────────── */
-.__looker_classes__ {
+.__glance_classes__ {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   padding: 2px 0;
 }
 
-.__looker_class_pill__ {
+.__glance_class_pill__ {
   background: #313244;
   color: #cba6f7;
   border: 1px solid rgba(203, 166, 247, 0.15);
@@ -372,32 +372,32 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   line-height: 1.4;
 }
 
-.__looker_class_pill__:hover {
+.__glance_class_pill__:hover {
   background: #45475a;
   border-color: rgba(203, 166, 247, 0.3);
   color: #d0bfff;
 }
 
-.__looker_class_pill__.__looker_class_active__ {
+.__glance_class_pill__.__glance_class_active__ {
   background: rgba(203, 166, 247, 0.15);
   border-color: #cba6f7;
   color: #cba6f7;
 }
 
-.__looker_class_details__ {
+.__glance_class_details__ {
   margin-top: 4px;
 }
 
-.__looker_class_rule__ {
+.__glance_class_rule__ {
   padding: 4px 0;
   border-top: 1px solid rgba(255,255,255,0.04);
 }
 
-.__looker_class_rule__:first-child {
+.__glance_class_rule__:first-child {
   border-top: none;
 }
 
-.__looker_class_rule_selector__ {
+.__glance_class_rule_selector__ {
   font-size: 9px;
   color: #89b4fa;
   padding: 2px 0 3px;
@@ -405,7 +405,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   opacity: 0.7;
 }
 
-.__looker_class_empty__ {
+.__glance_class_empty__ {
   font-size: 10px;
   color: #585b70;
   padding: 4px 0;
@@ -413,7 +413,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Rows (used in class details) ───────────────────────────────────────── */
-.__looker_row__ {
+.__glance_row__ {
   display: flex;
   align-items: center;
   padding: 2px 0;
@@ -421,14 +421,14 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   min-height: 22px;
 }
 
-.__looker_key__ {
+.__glance_key__ {
   color: #585b70;
   flex-shrink: 0;
   width: 52px;
   font-size: 10px;
 }
 
-.__looker_val__ {
+.__glance_val__ {
   color: #cdd6f4;
   font-size: 10.5px;
   cursor: pointer;
@@ -442,28 +442,28 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   line-height: 1.4;
 }
 
-.__looker_val__:hover {
+.__glance_val__:hover {
   background: rgba(255,255,255,0.06);
   color: #fff;
 }
 
-.__looker_val__.__looker_copied__ {
+.__glance_val__.__glance_copied__ {
   background: rgba(166, 227, 161, 0.15);
   color: #a6e3a1;
 }
 
-.__looker_val__.__looker_val_changed__ {
+.__glance_val__.__glance_val_changed__ {
   color: #fab387;
   background: rgba(250, 179, 135, 0.1);
 }
 
-.__looker_val__.__looker_val_changed__:hover {
+.__glance_val__.__glance_val_changed__:hover {
   background: rgba(250, 179, 135, 0.18);
   color: #ffd0a8;
 }
 
 /* ─── Color field ────────────────────────────────────────────────────────── */
-.__looker_color_field__ {
+.__glance_color_field__ {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -473,33 +473,33 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   padding: 5px 8px;
   min-height: 28px;
 }
-.__looker_color_field__ + .__looker_color_field__ {
+.__glance_color_field__ + .__glance_color_field__ {
   margin-top: 4px;
 }
-.__looker_color_field__:hover {
+.__glance_color_field__:hover {
   border-color: rgba(255,255,255,0.12);
 }
-.__looker_color_preview__ {
+.__glance_color_preview__ {
   width: 16px;
   height: 16px;
   border-radius: 4px;
   border: 1px solid rgba(255,255,255,0.12);
   flex-shrink: 0;
 }
-.__looker_color_hex__ {
+.__glance_color_hex__ {
   font-size: 11px;
   color: #cdd6f4;
   cursor: pointer;
   flex: 1;
 }
-.__looker_color_opacity__ {
+.__glance_color_opacity__ {
   font-size: 10px;
   color: #585b70;
   flex-shrink: 0;
 }
 
 /* ─── Inline edit input ─────────────────────────────────────────────────── */
-.__looker_edit_input__ {
+.__glance_edit_input__ {
   background: #1e1e2e;
   border: 1px solid #89b4fa;
   border-radius: 4px;
@@ -514,28 +514,28 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
 }
 
-.__looker_edit_input__:focus {
+.__glance_edit_input__:focus {
   border-color: #89b4fa;
 }
 
 /* ─── Scrub / enum label cursors ─────────────────────────────────────────── */
-.__looker_field_label__[data-scrub] {
+.__glance_field_label__[data-scrub] {
   cursor: ew-resize;
   user-select: none;
 }
-.__looker_field_label__[data-enum] {
+.__glance_field_label__[data-enum] {
   cursor: pointer;
   user-select: none;
 }
-.__looker_field_label__.__looker_scrubbing__ {
+.__glance_field_label__.__glance_scrubbing__ {
   color: #89b4fa;
 }
-.__looker_color_preview__ {
+.__glance_color_preview__ {
   cursor: pointer;
 }
 
 /* ─── Enum dropdown ─────────────────────────────────────────────────────── */
-.__looker_enum_dropdown__ {
+.__glance_enum_dropdown__ {
   position: absolute;
   top: 100%;
   left: 0;
@@ -551,29 +551,29 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   scrollbar-width: thin;
   scrollbar-color: #313244 transparent;
 }
-.__looker_enum_dropdown__::-webkit-scrollbar { width: 4px; }
-.__looker_enum_dropdown__::-webkit-scrollbar-track { background: transparent; }
-.__looker_enum_dropdown__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+.__glance_enum_dropdown__::-webkit-scrollbar { width: 4px; }
+.__glance_enum_dropdown__::-webkit-scrollbar-track { background: transparent; }
+.__glance_enum_dropdown__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
 
-.__looker_enum_option__ {
+.__glance_enum_option__ {
   padding: 5px 10px;
   font-size: 11px;
   color: #cdd6f4;
   cursor: pointer;
   transition: background 0.1s;
 }
-.__looker_enum_option__:hover {
+.__glance_enum_option__:hover {
   background: rgba(137, 180, 250, 0.12);
   color: #fff;
 }
-.__looker_enum_option__.__looker_enum_active__ {
+.__glance_enum_option__.__glance_enum_active__ {
   background: rgba(137, 180, 250, 0.18);
   color: #89b4fa;
   font-weight: 500;
 }
 
 /* ─── Color picker popover ──────────────────────────────────────────────── */
-.__looker_color_picker__ {
+.__glance_color_picker__ {
   position: absolute;
   top: 100%;
   left: 0;
@@ -587,7 +587,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   width: 236px;
 }
 
-.__looker_cp_sv__ {
+.__glance_cp_sv__ {
   display: block;
   width: 220px;
   height: 140px;
@@ -595,15 +595,15 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   cursor: crosshair;
 }
 
-.__looker_cp_sliders__ {
+.__glance_cp_sliders__ {
   display: flex;
   flex-direction: column;
   gap: 6px;
   margin-top: 8px;
 }
 
-.__looker_cp_hue__,
-.__looker_cp_alpha__ {
+.__glance_cp_hue__,
+.__glance_cp_alpha__ {
   display: block;
   width: 220px;
   height: 12px;
@@ -611,14 +611,14 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   cursor: pointer;
 }
 
-.__looker_cp_inputs__ {
+.__glance_cp_inputs__ {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-top: 8px;
 }
 
-.__looker_cp_preview_swatch__ {
+.__glance_cp_preview_swatch__ {
   width: 24px;
   height: 24px;
   border-radius: 6px;
@@ -626,7 +626,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   flex-shrink: 0;
 }
 
-.__looker_cp_hex_input__ {
+.__glance_cp_hex_input__ {
   background: #262637;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
@@ -638,13 +638,13 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   outline: none;
   min-width: 0;
 }
-.__looker_cp_hex_input__:focus {
+.__glance_cp_hex_input__:focus {
   border-color: #89b4fa;
   box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
 }
 
 /* ─── Color swatch ───────────────────────────────────────────────────────── */
-.__looker_swatch__ {
+.__glance_swatch__ {
   display: inline-block;
   width: 10px;
   height: 10px;
@@ -654,13 +654,13 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Box model ──────────────────────────────────────────────────────────── */
-.__looker_box_model__ {
+.__glance_box_model__ {
   margin: 4px 0;
   font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
   font-size: 10px;
 }
 
-.__looker_bm_zone__ {
+.__glance_bm_zone__ {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -669,27 +669,27 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   border-radius: 4px;
 }
 
-.__looker_bm_margin__ {
+.__glance_bm_margin__ {
   background: rgba(243, 139, 168, 0.05);
   border-color: rgba(243, 139, 168, 0.3);
   padding: 2px;
 }
 
-.__looker_bm_border_zone__ {
+.__glance_bm_border_zone__ {
   background: rgba(250, 179, 135, 0.05);
   border-color: rgba(250, 179, 135, 0.3);
   width: 100%;
   padding: 2px;
 }
 
-.__looker_bm_padding_zone__ {
+.__glance_bm_padding_zone__ {
   background: rgba(166, 227, 161, 0.05);
   border-color: rgba(166, 227, 161, 0.3);
   width: 100%;
   padding: 2px;
 }
 
-.__looker_bm_zone_label__ {
+.__glance_bm_zone_label__ {
   position: absolute;
   top: 0;
   left: 3px;
@@ -701,17 +701,17 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   border-radius: 0;
   background: none;
 }
-.__looker_bm_margin_label__ { color: #f38ba8; }
-.__looker_bm_border_label__ { color: #fab387; }
-.__looker_bm_padding_label__ { color: #a6e3a1; }
+.__glance_bm_margin_label__ { color: #f38ba8; }
+.__glance_bm_border_label__ { color: #fab387; }
+.__glance_bm_padding_label__ { color: #a6e3a1; }
 
-.__looker_bm_mid__ {
+.__glance_bm_mid__ {
   display: flex;
   align-items: center;
   width: 100%;
 }
 
-.__looker_bm_val__ {
+.__glance_bm_val__ {
   color: #cdd6f4;
   text-align: center;
   cursor: pointer;
@@ -725,12 +725,12 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   box-sizing: border-box;
   overflow: hidden;
 }
-.__looker_bm_val__:hover {
+.__glance_bm_val__:hover {
   background: rgba(137, 180, 250, 0.15);
   color: #89b4fa;
 }
 
-.__looker_bm_content__ {
+.__glance_bm_content__ {
   background: rgba(137, 180, 250, 0.06);
   border: 1px solid rgba(137, 180, 250, 0.12);
   border-radius: 3px;
@@ -743,7 +743,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   min-width: 0;
 }
 
-.__looker_bm_val__ .__looker_edit_input__ {
+.__glance_bm_val__ .__glance_edit_input__ {
   width: 100%;
   text-align: center;
   font-size: inherit;
@@ -759,7 +759,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Device Toggle Button ──────────────────────────────────────────────── */
-.__looker_icon_toggle__ {
+.__glance_icon_toggle__ {
   background: none;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
@@ -772,19 +772,19 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   align-items: center;
   justify-content: center;
 }
-.__looker_icon_toggle__:hover {
+.__glance_icon_toggle__:hover {
   color: #cdd6f4;
   border-color: rgba(255,255,255,0.15);
 }
-.__looker_icon_toggle__.__looker_device_active__,
-.__looker_icon_toggle__.__looker_hover_active__ {
+.__glance_icon_toggle__.__glance_device_active__,
+.__glance_icon_toggle__.__glance_hover_active__ {
   color: #89b4fa;
   border-color: rgba(137, 180, 250, 0.4);
   background: rgba(137, 180, 250, 0.1);
 }
 
 /* ─── Device Frame ──────────────────────────────────────────────────────── */
-#__looker_device_frame__ {
+#__glance_device_frame__ {
   position: fixed;
   top: 50%;
   z-index: 2147483640;
@@ -793,7 +793,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   transform-origin: center center;
 }
 
-#__looker_device_iframe__ {
+#__glance_device_iframe__ {
   position: absolute;
   left: 12px;
   top: 19px;
@@ -809,7 +809,7 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
   border-radius: 0;
 }
 
-.__looker_device_frame_img__ {
+.__glance_device_frame_img__ {
   position: absolute;
   top: 0;
   left: 0;
@@ -821,28 +821,28 @@ html.__looker_device_mode__ #__looker_hover_highlight__ {
 }
 
 /* ─── Device Mode Background ────────────────────────────────────────────── */
-html.__looker_device_mode__ {
+html.__glance_device_mode__ {
   background: #0a0a14 !important;
 }
-html.__looker_device_mode__ body {
+html.__glance_device_mode__ body {
   visibility: hidden !important;
 }
-html.__looker_device_mode__ #__looker_panel__,
-html.__looker_device_mode__ #__looker_device_frame__,
-html.__looker_device_mode__ #__looker_toast__ {
+html.__glance_device_mode__ #__glance_panel__,
+html.__glance_device_mode__ #__glance_device_frame__,
+html.__glance_device_mode__ #__glance_toast__ {
   visibility: visible !important;
 }
-html.__looker_device_mode__ #__looker_highlight__ {
+html.__glance_device_mode__ #__glance_highlight__ {
   display: none !important;
 }
 
 /* ─── Sidebar page push ────────────────────────────────────────────────── */
-html.__looker_sidebar_active__ {
-  margin-right: var(--__looker-sidebar-w, 280px) !important;
+html.__glance_sidebar_active__ {
+  margin-right: var(--__glance-sidebar-w, 280px) !important;
 }
 
 /* ─── Toast ──────────────────────────────────────────────────────────────── */
-#__looker_toast__ {
+#__glance_toast__ {
   position: fixed;
   bottom: 24px;
   left: 50%;
@@ -861,7 +861,7 @@ html.__looker_sidebar_active__ {
   white-space: nowrap;
 }
 
-#__looker_toast__.__looker_toast_show__ {
+#__glance_toast__.__glance_toast_show__ {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }

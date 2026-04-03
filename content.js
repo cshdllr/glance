@@ -1,10 +1,10 @@
 (() => {
-  if (window.__lookerInjected) {
+  if (window.__glanceInjected) {
     // Already injected — just toggle
-    window.__lookerToggle();
+    window.__glanceToggle();
     return;
   }
-  window.__lookerInjected = true;
+  window.__glanceInjected = true;
 
   let inspectorActive = false;
   let pinnedElement = null;
@@ -17,7 +17,7 @@
 
   let sidebarWidth = 280;
   try {
-    const savedW = parseInt(localStorage.getItem("__looker_sidebar_w__"), 10);
+    const savedW = parseInt(localStorage.getItem("__glance_sidebar_w__"), 10);
     if (savedW >= 200 && savedW <= 600) sidebarWidth = savedW;
   } catch {}
 
@@ -43,13 +43,13 @@
     "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
   };
 
-  window.__lookerToggle = function() {
+  window.__glanceToggle = function() {
     inspectorActive ? deactivate() : activate();
   };
 
   // Also listen for messages from background
   chrome.runtime.onMessage.addListener((msg) => {
-    if (msg.type === "TOGGLE_INSPECTOR") window.__lookerToggle();
+    if (msg.type === "TOGGLE_INSPECTOR") window.__glanceToggle();
   });
 
   // ─── Activate ──────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@
     escListener = (e) => { if (e.key === "Escape") deactivate(); };
     document.addEventListener("keydown", escListener, true);
     document.body.style.cursor = "crosshair";
-    showToast("Looker active — hover to inspect, click to pin");
+    showToast("Glance active — hover to inspect, click to pin");
   }
 
   // ─── Deactivate ────────────────────────────────────────────────────────────
@@ -77,7 +77,7 @@
     document.removeEventListener("scroll", onScroll, true);
     if (escListener) document.removeEventListener("keydown", escListener, true);
     document.body.style.cursor = "";
-    document.documentElement.classList.remove("__looker_sidebar_active__");
+    document.documentElement.classList.remove("__glance_sidebar_active__");
     if (highlightBox) { highlightBox.remove(); highlightBox = null; }
     if (hoverHighlight) { hoverHighlight.remove(); hoverHighlight = null; }
     if (panel) { panel.remove(); panel = null; }
@@ -89,7 +89,7 @@
     const tag = el.tagName.toLowerCase();
     const id = el.id ? "#" + el.id : "";
     const cls = el.classList.length
-      ? "." + Array.from(el.classList).filter(c => !c.startsWith("__looker_")).slice(0, 2).join(".")
+      ? "." + Array.from(el.classList).filter(c => !c.startsWith("__glance_")).slice(0, 2).join(".")
       : "";
     return tag + id + cls;
   }
@@ -98,17 +98,17 @@
 
   function createHighlightBox() {
     highlightBox = document.createElement("div");
-    highlightBox.id = "__looker_highlight__";
-    highlightBox.classList.add("__looker_pinned__");
+    highlightBox.id = "__glance_highlight__";
+    highlightBox.classList.add("__glance_pinned__");
     const label = document.createElement("span");
-    label.id = "__looker_highlight_label__";
+    label.id = "__glance_highlight_label__";
     highlightBox.appendChild(label);
     document.body.appendChild(highlightBox);
 
     hoverHighlight = document.createElement("div");
-    hoverHighlight.id = "__looker_hover_highlight__";
+    hoverHighlight.id = "__glance_hover_highlight__";
     const hoverLabel = document.createElement("span");
-    hoverLabel.id = "__looker_hover_highlight_label__";
+    hoverLabel.id = "__glance_hover_highlight_label__";
     hoverHighlight.appendChild(hoverLabel);
     document.body.appendChild(hoverHighlight);
   }
@@ -123,8 +123,8 @@
     highlightBox.style.width = r.width + "px";
     highlightBox.style.height = r.height + "px";
     highlightBox.style.display = "block";
-    highlightBox.classList.toggle("__looker_pinned__", !!pinnedElement);
-    const label = highlightBox.querySelector("#__looker_highlight_label__");
+    highlightBox.classList.toggle("__glance_pinned__", !!pinnedElement);
+    const label = highlightBox.querySelector("#__glance_highlight_label__");
     if (label) label.textContent = elementLabel(el);
   }
 
@@ -142,7 +142,7 @@
     hoverHighlight.style.width = r.width + "px";
     hoverHighlight.style.height = r.height + "px";
     hoverHighlight.style.display = "block";
-    const label = hoverHighlight.querySelector("#__looker_hover_highlight_label__");
+    const label = hoverHighlight.querySelector("#__glance_hover_highlight_label__");
     if (label) label.textContent = elementLabel(el);
   }
 
@@ -151,10 +151,10 @@
   }
 
   // ─── Events ────────────────────────────────────────────────────────────────
-  function isLookerUI(el) {
-    return !el || el.id === "__looker_highlight__" || el.id === "__looker_hover_highlight__"
-      || el.closest("#__looker_panel__")
-      || el.closest("#__looker_device_frame__");
+  function isGlanceUI(el) {
+    return !el || el.id === "__glance_highlight__" || el.id === "__glance_hover_highlight__"
+      || el.closest("#__glance_panel__")
+      || el.closest("#__glance_device_frame__");
   }
 
   function onMouseMove(e) {
@@ -163,7 +163,7 @@
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (isLookerUI(el)) return;
+    if (isGlanceUI(el)) return;
 
     if (pinnedElement) {
       positionHoverHighlight(el);
@@ -178,14 +178,14 @@
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (isLookerUI(el)) return;
+    if (isGlanceUI(el)) return;
     e.preventDefault();
     e.stopPropagation();
 
     if (pinnedElement === el) {
       pinnedElement = null;
       hideHoverHighlight();
-      highlightBox.classList.remove("__looker_pinned__");
+      highlightBox.classList.remove("__glance_pinned__");
       document.body.style.cursor = hoverEnabled ? "crosshair" : "";
     } else {
       pinnedElement = el;
@@ -202,7 +202,7 @@
     if (pinnedElement) positionHighlight(pinnedElement);
     if (hoverEnabled) {
       const el = document.elementFromPoint(lastMouseX, lastMouseY);
-      if (el && !isLookerUI(el)) {
+      if (el && !isGlanceUI(el)) {
         if (pinnedElement) {
           positionHoverHighlight(el);
         } else {
@@ -216,45 +216,45 @@
   // ─── Panel ─────────────────────────────────────────────────────────────────
   function createPanel() {
     panel = document.createElement("div");
-    panel.id = "__looker_panel__";
+    panel.id = "__glance_panel__";
     applySidebarWidth(sidebarWidth);
-    document.documentElement.classList.add("__looker_sidebar_active__");
+    document.documentElement.classList.add("__glance_sidebar_active__");
     panel.innerHTML = `
-      <div class="__looker_resize_handle__" id="__looker_resize_handle__"></div>
-      <div class="__looker_panel_header__">
-        <span class="__looker_logo__">◈ Looker</span>
-        <div class="__looker_header_actions__">
-          <button class="__looker_copy_changes__" id="__looker_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
-          <button class="__looker_icon_toggle__ __looker_hover_active__" id="__looker_hover_toggle__" title="Toggle hover inspection">
+      <div class="__glance_resize_handle__" id="__glance_resize_handle__"></div>
+      <div class="__glance_panel_header__">
+        <span class="__glance_logo__">◈ Glance</span>
+        <div class="__glance_header_actions__">
+          <button class="__glance_copy_changes__" id="__glance_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
+          <button class="__glance_icon_toggle__ __glance_hover_active__" id="__glance_hover_toggle__" title="Toggle hover inspection">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 12.5886C12 12.2698 12.25 12 12.575 12C12.7 12 12.85 12.0736 12.95 12.1471L19.8 18.1312C19.925 18.2293 20 18.3764 20 18.5236C20 18.8424 19.75 19.0631 19.425 19.0631H16.475L17.9 21.8589C18.1 22.2513 17.95 22.7173 17.55 22.9135C17.15 23.1097 16.675 22.9625 16.475 22.5701L15.025 19.7007L12.95 22.0306C12.85 22.1532 12.7 22.2023 12.55 22.2023C12.225 22.2023 12 21.9815 12 21.6627V12.5886Z" fill="currentColor"/>
               <path d="M18 5C19.0937 5 20 5.90624 20 7V17C20 17.1338 19.9853 17.264 19.9609 17.3896L19 16.5938V9H5V17C5 17.5625 5.4375 18 6 18H11.4688V19H6C4.875 19 4 18.125 4 17V7C4.00003 5.90624 4.87502 5 6 5H18ZM6 6C5.43752 6 5.00004 6.46876 5 7V8H8V6H6ZM9 8H19V7C19 6.46876 18.5312 6 18 6H9V8Z" fill="currentColor"/>
             </svg>
           </button>
-          <button class="__looker_icon_toggle__" id="__looker_device_toggle__" title="Toggle device preview">
+          <button class="__glance_icon_toggle__" id="__glance_device_toggle__" title="Toggle device preview">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
               <line x1="12" y1="18" x2="12" y2="18"/>
             </svg>
           </button>
-          <button class="__looker_close__" title="Close (Esc)">✕</button>
+          <button class="__glance_close__" title="Close (Esc)">✕</button>
         </div>
       </div>
-      <div class="__looker_panel_body__" id="__looker_body__">
-        <div class="__looker_empty__">Hover over any element</div>
+      <div class="__glance_panel_body__" id="__glance_body__">
+        <div class="__glance_empty__">Hover over any element</div>
       </div>
     `;
     document.body.appendChild(panel);
-    panel.querySelector(".__looker_close__").addEventListener("click", deactivate);
-    panel.querySelector("#__looker_copy_changes__").addEventListener("click", copyAllChanges);
-    panel.querySelector("#__looker_device_toggle__").addEventListener("click", toggleDevicePreview);
-    panel.querySelector("#__looker_hover_toggle__").addEventListener("click", toggleHoverInspection);
+    panel.querySelector(".__glance_close__").addEventListener("click", deactivate);
+    panel.querySelector("#__glance_copy_changes__").addEventListener("click", copyAllChanges);
+    panel.querySelector("#__glance_device_toggle__").addEventListener("click", toggleDevicePreview);
+    panel.querySelector("#__glance_hover_toggle__").addEventListener("click", toggleHoverInspection);
     initResizeHandle();
   }
 
   function renderPanel(el) {
     if (!panel) return;
-    const body = panel.querySelector("#__looker_body__");
+    const body = panel.querySelector("#__glance_body__");
     if (!body) return;
 
     const elWin = el.ownerDocument.defaultView || window;
@@ -296,7 +296,7 @@
 
     const hasParent = el.parentElement && el.parentElement !== el.ownerDocument.documentElement && el.parentElement !== el.ownerDocument.body;
     const children = Array.from(el.children).filter(c =>
-      !c.id?.startsWith("__looker_") && !c.classList?.contains("__looker_highlight__")
+      !c.id?.startsWith("__glance_") && !c.classList?.contains("__glance_highlight__")
     );
 
     const parentTag = hasParent ? el.parentElement.tagName.toLowerCase() : "";
@@ -306,45 +306,45 @@
 
     body.innerHTML = `
       ${section("Element", `
-        <div class="__looker_dom_tree__">
-          ${hasParent ? `<button class="__looker_dom_tree_item__" id="__looker_nav_parent__" title="Select parent element">
-            <span class="__looker_dom_tree_tag__">&lt;${parentTag}${parentId}${parentCls}&gt;</span>
+        <div class="__glance_dom_tree__">
+          ${hasParent ? `<button class="__glance_dom_tree_item__" id="__glance_nav_parent__" title="Select parent element">
+            <span class="__glance_dom_tree_tag__">&lt;${parentTag}${parentId}${parentCls}&gt;</span>
           </button>` : ""}
-          <div class="__looker_dom_tree_current__">
-            <span class="__looker_dom_tree_tag__">&lt;${tag}${elId}${classes}&gt;</span>
+          <div class="__glance_dom_tree_current__">
+            <span class="__glance_dom_tree_tag__">&lt;${tag}${elId}${classes}&gt;</span>
           </div>
-          ${children.length ? `<div class="__looker_dom_tree_children__">
+          ${children.length ? `<div class="__glance_dom_tree_children__">
             ${children.slice(0, 12).map((c, i) => {
               const cTag = c.tagName.toLowerCase();
               const cId = c.id ? "#" + c.id : "";
               const cCls = c.classList.length ? "." + Array.from(c.classList).slice(0,1).join(".") : "";
-              return `<button class="__looker_dom_tree_item__ __looker_dom_child_btn__" data-child-idx="${i}" title="Select child element">
-                <span class="__looker_dom_tree_tag__">&lt;${cTag}${cId}${cCls}&gt;</span>
+              return `<button class="__glance_dom_tree_item__ __glance_dom_child_btn__" data-child-idx="${i}" title="Select child element">
+                <span class="__glance_dom_tree_tag__">&lt;${cTag}${cId}${cCls}&gt;</span>
               </button>`;
             }).join("")}
-            ${children.length > 12 ? `<span class="__looker_dom_more__">+${children.length - 12} more</span>` : ""}
+            ${children.length > 12 ? `<span class="__glance_dom_more__">+${children.length - 12} more</span>` : ""}
           </div>` : ""}
         </div>
       `)}
 
       ${classList.length ? section("Classes", `
-        <div class="__looker_classes__">
+        <div class="__glance_classes__">
           ${classList.map(c => `
-            <button class="__looker_class_pill__" data-classname="${c}">.${c}</button>
+            <button class="__glance_class_pill__" data-classname="${c}">.${c}</button>
           `).join("")}
         </div>
-        <div class="__looker_class_details__" id="__looker_class_details__"></div>
+        <div class="__glance_class_details__" id="__glance_class_details__"></div>
       `) : ""}
 
       ${section("Position", `
-        <div class="__looker_field_grid__">
+        <div class="__glance_field_grid__">
           ${field("X", Math.round(rect.left) + "", null)}
           ${field("Y", Math.round(rect.top) + "", null)}
         </div>
       `)}
 
       ${section("Layout", `
-        <div class="__looker_field_grid__">
+        <div class="__glance_field_grid__">
           ${field("W", px(rect.width), "width")}
           ${field("H", px(rect.height), "height")}
           ${field("Display", cs.display, "display")}
@@ -357,34 +357,34 @@
       `)}
 
       ${section("Spacing", `
-        <div class="__looker_box_model__">
-          <div class="__looker_bm_zone__ __looker_bm_margin__">
-            <div class="__looker_bm_zone_label__ __looker_bm_margin_label__">margin</div>
-            <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="margin-top">${stripPx(cs.marginTop)}</span>
-            <div class="__looker_bm_mid__">
-              <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="margin-left">${stripPx(cs.marginLeft)}</span>
-              <div class="__looker_bm_zone__ __looker_bm_border_zone__">
-                <div class="__looker_bm_zone_label__ __looker_bm_border_label__">border</div>
-                <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="border-top-width">${stripPx(cs.borderTopWidth)}</span>
-                <div class="__looker_bm_mid__">
-                  <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="border-left-width">${stripPx(cs.borderLeftWidth)}</span>
-                  <div class="__looker_bm_zone__ __looker_bm_padding_zone__">
-                    <div class="__looker_bm_zone_label__ __looker_bm_padding_label__">padding</div>
-                    <span class="__looker_bm_val__ __looker_bm_top__" data-bmprop="padding-top">${stripPx(cs.paddingTop)}</span>
-                    <div class="__looker_bm_mid__">
-                      <span class="__looker_bm_val__ __looker_bm_left__" data-bmprop="padding-left">${stripPx(cs.paddingLeft)}</span>
-                      <div class="__looker_bm_content__">${contentW} × ${contentH}</div>
-                      <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="padding-right">${stripPx(cs.paddingRight)}</span>
+        <div class="__glance_box_model__">
+          <div class="__glance_bm_zone__ __glance_bm_margin__">
+            <div class="__glance_bm_zone_label__ __glance_bm_margin_label__">margin</div>
+            <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="margin-top">${stripPx(cs.marginTop)}</span>
+            <div class="__glance_bm_mid__">
+              <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="margin-left">${stripPx(cs.marginLeft)}</span>
+              <div class="__glance_bm_zone__ __glance_bm_border_zone__">
+                <div class="__glance_bm_zone_label__ __glance_bm_border_label__">border</div>
+                <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="border-top-width">${stripPx(cs.borderTopWidth)}</span>
+                <div class="__glance_bm_mid__">
+                  <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="border-left-width">${stripPx(cs.borderLeftWidth)}</span>
+                  <div class="__glance_bm_zone__ __glance_bm_padding_zone__">
+                    <div class="__glance_bm_zone_label__ __glance_bm_padding_label__">padding</div>
+                    <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="padding-top">${stripPx(cs.paddingTop)}</span>
+                    <div class="__glance_bm_mid__">
+                      <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="padding-left">${stripPx(cs.paddingLeft)}</span>
+                      <div class="__glance_bm_content__">${contentW} × ${contentH}</div>
+                      <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="padding-right">${stripPx(cs.paddingRight)}</span>
                     </div>
-                    <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="padding-bottom">${stripPx(cs.paddingBottom)}</span>
+                    <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="padding-bottom">${stripPx(cs.paddingBottom)}</span>
                   </div>
-                  <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="border-right-width">${stripPx(cs.borderRightWidth)}</span>
+                  <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="border-right-width">${stripPx(cs.borderRightWidth)}</span>
                 </div>
-                <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="border-bottom-width">${stripPx(cs.borderBottomWidth)}</span>
+                <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="border-bottom-width">${stripPx(cs.borderBottomWidth)}</span>
               </div>
-              <span class="__looker_bm_val__ __looker_bm_right__" data-bmprop="margin-right">${stripPx(cs.marginRight)}</span>
+              <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="margin-right">${stripPx(cs.marginRight)}</span>
             </div>
-            <span class="__looker_bm_val__ __looker_bm_bottom__" data-bmprop="margin-bottom">${stripPx(cs.marginBottom)}</span>
+            <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="margin-bottom">${stripPx(cs.marginBottom)}</span>
           </div>
         </div>
       `)}
@@ -392,7 +392,7 @@
       ${section("Appearance", `
         ${colorField("Fill", cs.backgroundColor, "background-color")}
         ${colorField("Color", cs.color, "color")}
-        <div class="__looker_field_grid__" style="margin-top:4px">
+        <div class="__glance_field_grid__" style="margin-top:4px">
           ${field("Opacity", cs.opacity, "opacity")}
           ${field("Radius", cs.borderRadius === "0px" ? "0" : cs.borderRadius, "border-radius")}
           ${cs.borderTopWidth !== "0px" ? field("Border", cs.borderTopWidth + " " + cs.borderTopStyle, "border") : ""}
@@ -401,7 +401,7 @@
       `)}
 
       ${section("Typography", `
-        <div class="__looker_field_grid__">
+        <div class="__glance_field_grid__">
           ${field("Font", shortFont(cs.fontFamily), "font-family", true)}
           ${field("Weight", cs.fontWeight, "font-weight")}
           ${field("Size", cs.fontSize, "font-size")}
@@ -427,14 +427,14 @@
   }
 
   function attachDomNavHandlers(container, el, children, hasParent) {
-    const parentBtn = container.querySelector("#__looker_nav_parent__");
+    const parentBtn = container.querySelector("#__glance_nav_parent__");
     if (parentBtn && hasParent) {
       parentBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         selectElement(el.parentElement);
       });
     }
-    container.querySelectorAll(".__looker_dom_child_btn__").forEach(btn => {
+    container.querySelectorAll(".__glance_dom_child_btn__").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const idx = parseInt(btn.dataset.childIdx, 10);
@@ -444,15 +444,15 @@
   }
 
   function attachBoxModelHandlers(container, targetEl) {
-    container.querySelectorAll(".__looker_bm_val__[data-bmprop]").forEach(valSpan => {
+    container.querySelectorAll(".__glance_bm_val__[data-bmprop]").forEach(valSpan => {
       valSpan.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (valSpan.querySelector(".__looker_edit_input__")) return;
+        if (valSpan.querySelector(".__glance_edit_input__")) return;
         const cssProp = valSpan.dataset.bmprop;
         const currentVal = valSpan.textContent.trim();
         const input = document.createElement("input");
         input.type = "text";
-        input.className = "__looker_edit_input__";
+        input.className = "__glance_edit_input__";
         input.value = currentVal;
         valSpan.textContent = "";
         valSpan.appendChild(input);
@@ -499,25 +499,25 @@
   }
 
   function attachFieldHandlers(container, targetEl) {
-    container.querySelectorAll(".__looker_field_value__, .__looker_color_hex__").forEach(v => {
+    container.querySelectorAll(".__glance_field_value__, .__glance_color_hex__").forEach(v => {
       v.addEventListener("click", (e) => {
-        if (v.querySelector(".__looker_edit_input__")) return;
+        if (v.querySelector(".__glance_edit_input__")) return;
         navigator.clipboard.writeText(v.dataset.copy || v.textContent.trim()).catch(() => {});
-        v.classList.add("__looker_copied__");
-        setTimeout(() => v.classList.remove("__looker_copied__"), 800);
+        v.classList.add("__glance_copied__");
+        setTimeout(() => v.classList.remove("__glance_copied__"), 800);
       });
       const cssProp = v.dataset.cssprop;
       if (cssProp) {
         v.addEventListener("dblclick", (e) => {
           e.stopPropagation();
-          if (v.querySelector(".__looker_edit_input__")) return;
+          if (v.querySelector(".__glance_edit_input__")) return;
           startEditing(v, cssProp, targetEl);
         });
       }
     });
 
     // Label interactions: scrub + dropdown
-    container.querySelectorAll(".__looker_field_label__").forEach(lbl => {
+    container.querySelectorAll(".__glance_field_label__").forEach(lbl => {
       const fieldType = lbl.dataset.fieldtype;
       const valEl = lbl.nextElementSibling;
       if (!valEl) return;
@@ -538,10 +538,10 @@
     });
 
     // Color swatch click -> color picker
-    container.querySelectorAll(".__looker_color_preview__").forEach(swatch => {
-      const colorField = swatch.closest(".__looker_color_field__");
+    container.querySelectorAll(".__glance_color_preview__").forEach(swatch => {
+      const colorField = swatch.closest(".__glance_color_field__");
       if (!colorField) return;
-      const hexEl = colorField.querySelector(".__looker_color_hex__");
+      const hexEl = colorField.querySelector(".__glance_color_hex__");
       if (!hexEl) return;
       const cssProp = hexEl.dataset.cssprop;
       if (!cssProp) return;
@@ -563,7 +563,7 @@
     const unit = match[2] || "";
     const rangeDef = RANGE_PROPS[cssProp];
 
-    lbl.classList.add("__looker_scrubbing__");
+    lbl.classList.add("__glance_scrubbing__");
     document.body.style.cursor = "ew-resize";
     document.body.style.userSelect = "none";
 
@@ -589,7 +589,7 @@
     };
 
     const onUp = () => {
-      lbl.classList.remove("__looker_scrubbing__");
+      lbl.classList.remove("__glance_scrubbing__");
       document.body.style.cursor = pinnedElement ? "default" : "crosshair";
       document.body.style.userSelect = "";
       document.removeEventListener("mousemove", onMove);
@@ -628,11 +628,11 @@
     const currentVal = valEl.dataset.copy || valEl.textContent.trim();
 
     const dd = document.createElement("div");
-    dd.className = "__looker_enum_dropdown__";
+    dd.className = "__glance_enum_dropdown__";
     options.forEach(opt => {
       const item = document.createElement("div");
-      item.className = "__looker_enum_option__";
-      if (opt === currentVal) item.classList.add("__looker_enum_active__");
+      item.className = "__glance_enum_option__";
+      if (opt === currentVal) item.classList.add("__glance_enum_active__");
       item.textContent = opt;
       item.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -643,7 +643,7 @@
       dd.appendChild(item);
     });
 
-    const fieldEl = lbl.closest(".__looker_field__");
+    const fieldEl = lbl.closest(".__glance_field__");
     if (!fieldEl) return;
     fieldEl.style.position = "relative";
     fieldEl.appendChild(dd);
@@ -721,30 +721,30 @@
     let state = { h: hsv.h, s: hsv.s, v: hsv.v, a: rgba.a };
 
     const picker = document.createElement("div");
-    picker.className = "__looker_color_picker__";
+    picker.className = "__glance_color_picker__";
     picker.innerHTML = `
-      <canvas class="__looker_cp_sv__" width="220" height="140"></canvas>
-      <div class="__looker_cp_sliders__">
-        <canvas class="__looker_cp_hue__" width="220" height="12"></canvas>
-        <canvas class="__looker_cp_alpha__" width="220" height="12"></canvas>
+      <canvas class="__glance_cp_sv__" width="220" height="140"></canvas>
+      <div class="__glance_cp_sliders__">
+        <canvas class="__glance_cp_hue__" width="220" height="12"></canvas>
+        <canvas class="__glance_cp_alpha__" width="220" height="12"></canvas>
       </div>
-      <div class="__looker_cp_inputs__">
-        <div class="__looker_cp_preview_swatch__"></div>
-        <input class="__looker_cp_hex_input__" type="text" spellcheck="false" />
+      <div class="__glance_cp_inputs__">
+        <div class="__glance_cp_preview_swatch__"></div>
+        <input class="__glance_cp_hex_input__" type="text" spellcheck="false" />
       </div>
     `;
 
-    const colorField = swatch.closest(".__looker_color_field__");
+    const colorField = swatch.closest(".__glance_color_field__");
     if (!colorField) return;
     colorField.style.position = "relative";
     colorField.appendChild(picker);
     activeColorPicker = picker;
 
-    const svCanvas = picker.querySelector(".__looker_cp_sv__");
-    const hueCanvas = picker.querySelector(".__looker_cp_hue__");
-    const alphaCanvas = picker.querySelector(".__looker_cp_alpha__");
-    const hexInput = picker.querySelector(".__looker_cp_hex_input__");
-    const previewSwatch = picker.querySelector(".__looker_cp_preview_swatch__");
+    const svCanvas = picker.querySelector(".__glance_cp_sv__");
+    const hueCanvas = picker.querySelector(".__glance_cp_hue__");
+    const alphaCanvas = picker.querySelector(".__glance_cp_alpha__");
+    const hexInput = picker.querySelector(".__glance_cp_hex_input__");
+    const previewSwatch = picker.querySelector(".__glance_cp_preview_swatch__");
 
     function outputColor() {
       const rgb = hsvToRgb(state.h, state.s, state.v);
@@ -912,18 +912,18 @@
   }
 
   function attachValHandlers(container, targetEl) {
-    container.querySelectorAll(".__looker_val__").forEach(v => {
+    container.querySelectorAll(".__glance_val__").forEach(v => {
       v.addEventListener("click", (e) => {
-        if (v.querySelector(".__looker_edit_input__")) return;
+        if (v.querySelector(".__glance_edit_input__")) return;
         navigator.clipboard.writeText(v.dataset.copy || v.textContent.trim()).catch(() => {});
-        v.classList.add("__looker_copied__");
-        setTimeout(() => v.classList.remove("__looker_copied__"), 800);
+        v.classList.add("__glance_copied__");
+        setTimeout(() => v.classList.remove("__glance_copied__"), 800);
       });
       const cssProp = v.dataset.cssprop;
       if (cssProp) {
         v.addEventListener("dblclick", (e) => {
           e.stopPropagation();
-          if (v.querySelector(".__looker_edit_input__")) return;
+          if (v.querySelector(".__glance_edit_input__")) return;
           startEditing(v, cssProp, targetEl);
         });
       }
@@ -934,10 +934,10 @@
     const currentVal = valEl.dataset.copy || valEl.textContent.trim();
     const input = document.createElement("input");
     input.type = "text";
-    input.className = "__looker_edit_input__";
+    input.className = "__glance_edit_input__";
     input.value = currentVal;
     valEl.textContent = "";
-    valEl.querySelectorAll(".__looker_swatch__").forEach(s => s.remove());
+    valEl.querySelectorAll(".__glance_swatch__").forEach(s => s.remove());
     valEl.appendChild(input);
     input.focus();
     input.select();
@@ -1006,11 +1006,11 @@
   }
 
   function updateCopyChangesButton() {
-    const btn = document.getElementById("__looker_copy_changes__");
+    const btn = document.getElementById("__glance_copy_changes__");
     if (!btn) return;
     const totalChanges = Array.from(changedStyles.values())
       .reduce((sum, m) => sum + m.size, 0);
-    btn.classList.toggle("__looker_has_changes__", totalChanges > 0);
+    btn.classList.toggle("__glance_has_changes__", totalChanges > 0);
     btn.textContent = totalChanges > 0 ? `Copy Changes (${totalChanges})` : "Copy Changes";
   }
 
@@ -1043,38 +1043,38 @@
   }
 
   function attachClassPillHandlers(body, targetEl) {
-    body.querySelectorAll(".__looker_class_pill__").forEach(pill => {
+    body.querySelectorAll(".__glance_class_pill__").forEach(pill => {
       pill.addEventListener("click", () => {
         const className = pill.dataset.classname;
-        const detailsContainer = body.querySelector("#__looker_class_details__");
+        const detailsContainer = body.querySelector("#__glance_class_details__");
         if (!detailsContainer) return;
 
-        if (pill.classList.contains("__looker_class_active__")) {
-          pill.classList.remove("__looker_class_active__");
+        if (pill.classList.contains("__glance_class_active__")) {
+          pill.classList.remove("__glance_class_active__");
           detailsContainer.innerHTML = "";
           return;
         }
 
-        body.querySelectorAll(".__looker_class_pill__").forEach(p =>
-          p.classList.remove("__looker_class_active__")
+        body.querySelectorAll(".__glance_class_pill__").forEach(p =>
+          p.classList.remove("__glance_class_active__")
         );
-        pill.classList.add("__looker_class_active__");
+        pill.classList.add("__glance_class_active__");
 
         const rules = getClassRules(className, targetEl.ownerDocument);
         if (rules.length === 0) {
-          detailsContainer.innerHTML = `<div class="__looker_class_empty__">No defined properties found</div>`;
+          detailsContainer.innerHTML = `<div class="__glance_class_empty__">No defined properties found</div>`;
         } else {
           detailsContainer.innerHTML = rules.map(rule => `
-            <div class="__looker_class_rule__">
-              <div class="__looker_class_rule_selector__">${rule.selector}</div>
+            <div class="__glance_class_rule__">
+              <div class="__glance_class_rule_selector__">${rule.selector}</div>
               ${rule.properties.map(p => {
                 const isChanged = targetEl && changedStyles.has(targetEl)
                   && changedStyles.get(targetEl).has(p.name);
-                const changedClass = isChanged ? " __looker_val_changed__" : "";
+                const changedClass = isChanged ? " __glance_val_changed__" : "";
                 return `
-                <div class="__looker_row__">
-                  <span class="__looker_key__" style="width:auto;flex:1">${p.name}</span>
-                  <span class="__looker_val__${changedClass}" data-copy="${p.value}" data-cssprop="${p.name}">${p.value}</span>
+                <div class="__glance_row__">
+                  <span class="__glance_key__" style="width:auto;flex:1">${p.name}</span>
+                  <span class="__glance_val__${changedClass}" data-copy="${p.value}" data-cssprop="${p.name}">${p.value}</span>
                 </div>`;
               }).join("")}
             </div>
@@ -1120,14 +1120,14 @@
   function applySidebarWidth(w) {
     sidebarWidth = Math.max(200, Math.min(600, w));
     if (panel) panel.style.width = sidebarWidth + "px";
-    document.documentElement.style.setProperty("--__looker-sidebar-w", sidebarWidth + "px");
+    document.documentElement.style.setProperty("--__glance-sidebar-w", sidebarWidth + "px");
   }
 
   // ─── Hover Inspection Toggle ────────────────────────────────────────────────
   function toggleHoverInspection() {
     hoverEnabled = !hoverEnabled;
-    const btn = panel.querySelector("#__looker_hover_toggle__");
-    btn.classList.toggle("__looker_hover_active__", hoverEnabled);
+    const btn = panel.querySelector("#__glance_hover_toggle__");
+    btn.classList.toggle("__glance_hover_active__", hoverEnabled);
 
     if (!hoverEnabled) {
       if (!pinnedElement && highlightBox) {
@@ -1139,7 +1139,7 @@
       }
       document.body.style.cursor = "";
       try {
-        const iframe = document.getElementById("__looker_device_iframe__");
+        const iframe = document.getElementById("__glance_device_iframe__");
         if (iframe?.contentDocument?.body) iframe.contentDocument.body.style.cursor = "";
       } catch {}
     } else {
@@ -1147,7 +1147,7 @@
       if (iframeHighlight) iframeHighlight.style.display = "";
       if (!pinnedElement) document.body.style.cursor = "crosshair";
       try {
-        const iframe = document.getElementById("__looker_device_iframe__");
+        const iframe = document.getElementById("__glance_device_iframe__");
         if (iframe?.contentDocument?.body && !iframePinnedElement) {
           iframe.contentDocument.body.style.cursor = "crosshair";
         }
@@ -1167,8 +1167,8 @@
   function enableDevicePreview() {
     devicePreviewActive = true;
 
-    const toggleBtn = document.getElementById("__looker_device_toggle__");
-    if (toggleBtn) toggleBtn.classList.add("__looker_device_active__");
+    const toggleBtn = document.getElementById("__glance_device_toggle__");
+    if (toggleBtn) toggleBtn.classList.add("__glance_device_active__");
 
     createDeviceFrame();
     applyDeviceSize();
@@ -1178,8 +1178,8 @@
   function disableDevicePreview() {
     devicePreviewActive = false;
 
-    const toggleBtn = document.getElementById("__looker_device_toggle__");
-    if (toggleBtn) toggleBtn.classList.remove("__looker_device_active__");
+    const toggleBtn = document.getElementById("__glance_device_toggle__");
+    if (toggleBtn) toggleBtn.classList.remove("__glance_device_active__");
 
     removeDeviceFrame();
     showToast("Device preview off");
@@ -1192,17 +1192,17 @@
   function createDeviceFrame() {
     removeDeviceFrame();
     deviceFrame = document.createElement("div");
-    deviceFrame.id = "__looker_device_frame__";
+    deviceFrame.id = "__glance_device_frame__";
 
     const frameSrc = chrome.runtime.getURL("assets/iphone-frame.png");
     deviceFrame.innerHTML = `
-      <iframe id="__looker_device_iframe__" src="${window.location.href}"></iframe>
-      <img class="__looker_device_frame_img__" src="${frameSrc}" draggable="false" />
+      <iframe id="__glance_device_iframe__" src="${window.location.href}"></iframe>
+      <img class="__glance_device_frame_img__" src="${frameSrc}" draggable="false" />
     `;
     document.body.appendChild(deviceFrame);
-    document.documentElement.classList.add("__looker_device_mode__");
+    document.documentElement.classList.add("__glance_device_mode__");
 
-    const iframe = deviceFrame.querySelector("#__looker_device_iframe__");
+    const iframe = deviceFrame.querySelector("#__glance_device_iframe__");
 
     iframe.addEventListener("load", () => {
       try {
@@ -1226,13 +1226,13 @@
       "font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;font-size:10px;line-height:1;" +
       "padding:3px 6px;border-radius:3px 3px 0 0;white-space:nowrap;max-width:200px;" +
       "overflow:hidden;text-overflow:ellipsis;pointer-events:none;";
-    iframeLabel.id = "__looker_iframe_highlight_label__";
+    iframeLabel.id = "__glance_iframe_highlight_label__";
     iframeHighlight.appendChild(iframeLabel);
     idoc.body.appendChild(iframeHighlight);
     idoc.body.style.cursor = "crosshair";
 
     function updateIframeLabel(el) {
-      const lbl = iframeHighlight.querySelector("#__looker_iframe_highlight_label__");
+      const lbl = iframeHighlight.querySelector("#__glance_iframe_highlight_label__");
       if (lbl) lbl.textContent = elementLabel(el);
     }
 
@@ -1298,7 +1298,7 @@
     if (deviceFrame) { deviceFrame.remove(); deviceFrame = null; }
     iframeHighlight = null;
     iframePinnedElement = null;
-    document.documentElement.classList.remove("__looker_device_mode__");
+    document.documentElement.classList.remove("__glance_device_mode__");
   }
 
   function applyDeviceSize() {
@@ -1318,9 +1318,9 @@
   // ─── Helpers ───────────────────────────────────────────────────────────────
   function section(title, content) {
     return `
-      <div class="__looker_section__">
-        <div class="__looker_section_title__">${title}</div>
-        <div class="__looker_section_content__">${content}</div>
+      <div class="__glance_section__">
+        <div class="__glance_section_title__">${title}</div>
+        <div class="__glance_section_content__">${content}</div>
       </div>`;
   }
 
@@ -1336,17 +1336,17 @@
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
     const isChanged = cssProp && pinnedElement && changedStyles.has(pinnedElement)
       && changedStyles.get(pinnedElement).has(cssProp);
-    const changedClass = isChanged ? " __looker_val_changed__" : "";
-    const fullClass = full ? " __looker_field_full__" : "";
+    const changedClass = isChanged ? " __glance_val_changed__" : "";
+    const fullClass = full ? " __glance_field_full__" : "";
     const fieldType = classifyField(cssProp, value);
     const labelAttrs = [];
     if (fieldType === "numeric" || fieldType === "range") labelAttrs.push('data-scrub');
     if (fieldType === "enum") labelAttrs.push('data-enum');
     if (fieldType) labelAttrs.push(`data-fieldtype="${fieldType}"`);
     return `
-      <div class="__looker_field__${fullClass}">
-        <span class="__looker_field_label__" ${labelAttrs.join(" ")}>${label}</span>
-        <span class="__looker_field_value__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
+      <div class="__glance_field__${fullClass}">
+        <span class="__glance_field_label__" ${labelAttrs.join(" ")}>${label}</span>
+        <span class="__glance_field_value__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
       </div>`;
   }
 
@@ -1358,10 +1358,10 @@
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
     const preview = isTransparent ? "transparent" : color;
     return `
-      <div class="__looker_color_field__">
-        <div class="__looker_color_preview__" style="background:${preview}"></div>
-        <span class="__looker_color_hex__" data-copy="${color}"${propAttr}>${hex}</span>
-        <span class="__looker_color_opacity__">${opacity}</span>
+      <div class="__glance_color_field__">
+        <div class="__glance_color_preview__" style="background:${preview}"></div>
+        <span class="__glance_color_hex__" data-copy="${color}"${propAttr}>${hex}</span>
+        <span class="__glance_color_opacity__">${opacity}</span>
       </div>`;
   }
 
@@ -1370,11 +1370,11 @@
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
     const isChanged = cssProp && pinnedElement && changedStyles.has(pinnedElement)
       && changedStyles.get(pinnedElement).has(cssProp);
-    const changedClass = isChanged ? " __looker_val_changed__" : "";
+    const changedClass = isChanged ? " __glance_val_changed__" : "";
     return `
-      <div class="__looker_row__">
-        <span class="__looker_key__">${label}</span>
-        <span class="__looker_val__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
+      <div class="__glance_row__">
+        <span class="__glance_key__">${label}</span>
+        <span class="__glance_val__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
       </div>`;
   }
 
@@ -1399,13 +1399,13 @@
 
   // ─── Resize handle ─────────────────────────────────────────────────────────
   function initResizeHandle() {
-    const handle = document.getElementById("__looker_resize_handle__");
+    const handle = document.getElementById("__glance_resize_handle__");
     if (!handle) return;
     handle.addEventListener("mousedown", (e) => {
       e.preventDefault();
       const startX = e.clientX;
       const startW = sidebarWidth;
-      handle.classList.add("__looker_resizing__");
+      handle.classList.add("__glance_resizing__");
       document.body.style.cursor = "col-resize";
       document.body.style.userSelect = "none";
 
@@ -1414,12 +1414,12 @@
         applySidebarWidth(startW + delta);
       };
       const onUp = () => {
-        handle.classList.remove("__looker_resizing__");
+        handle.classList.remove("__glance_resizing__");
         document.body.style.cursor = inspectorActive && !pinnedElement ? "crosshair" : "";
         document.body.style.userSelect = "";
         document.removeEventListener("mousemove", onMove);
         document.removeEventListener("mouseup", onUp);
-        try { localStorage.setItem("__looker_sidebar_w__", String(sidebarWidth)); } catch {}
+        try { localStorage.setItem("__glance_sidebar_w__", String(sidebarWidth)); } catch {}
       };
       document.addEventListener("mousemove", onMove);
       document.addEventListener("mouseup", onUp);
@@ -1428,15 +1428,15 @@
 
   // ─── Toast ─────────────────────────────────────────────────────────────────
   function showToast(msg) {
-    const existing = document.getElementById("__looker_toast__");
+    const existing = document.getElementById("__glance_toast__");
     if (existing) existing.remove();
     const t = document.createElement("div");
-    t.id = "__looker_toast__";
+    t.id = "__glance_toast__";
     t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(() => t.classList.add("__looker_toast_show__"), 10);
+    setTimeout(() => t.classList.add("__glance_toast_show__"), 10);
     setTimeout(() => {
-      t.classList.remove("__looker_toast_show__");
+      t.classList.remove("__glance_toast_show__");
       setTimeout(() => t.remove(), 400);
     }, 2800);
   }
