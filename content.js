@@ -310,7 +310,7 @@
           ${hasParent ? `<button class="__glance_dom_tree_item__" id="__glance_nav_parent__" title="Select parent element">
             <span class="__glance_dom_tree_tag__">&lt;${parentTag}${parentId}${parentCls}&gt;</span>
           </button>` : ""}
-          <div class="__glance_dom_tree_current__">
+          <div class="__glance_dom_tree_current__" id="__glance_dom_current__" role="button" tabindex="0" title="Copy element name">
             <span class="__glance_dom_tree_tag__">&lt;${tag}${elId}${classes}&gt;</span>
           </div>
           ${children.length ? `<div class="__glance_dom_tree_children__">
@@ -432,6 +432,25 @@
       parentBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         selectElement(el.parentElement);
+      });
+    }
+    const currentRow = container.querySelector("#__glance_dom_current__");
+    if (currentRow) {
+      const copyElementName = (e) => {
+        e.stopPropagation();
+        const tagEl = currentRow.querySelector(".__glance_dom_tree_tag__");
+        const text = tagEl ? tagEl.textContent.trim() : "";
+        if (!text) return;
+        navigator.clipboard.writeText(text).catch(() => {});
+        currentRow.classList.add("__glance_copied__");
+        setTimeout(() => currentRow.classList.remove("__glance_copied__"), 800);
+      };
+      currentRow.addEventListener("click", copyElementName);
+      currentRow.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          copyElementName(e);
+        }
       });
     }
     container.querySelectorAll(".__glance_dom_child_btn__").forEach(btn => {

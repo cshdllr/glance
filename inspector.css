@@ -65,7 +65,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   font-size: 11px;
   background: #000000;
   overflow: hidden;
-  color: #cdd6f4;
+  color: #fff;
   border-left: 1px solid rgba(255,255,255,0.08);
 }
 
@@ -147,7 +147,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   transition: color 0.15s;
   border-radius: 4px;
 }
-.__glance_close__:hover { color: #cdd6f4; background: rgba(255,255,255,0.06); }
+.__glance_close__:hover { color: #fff; background: rgba(255,255,255,0.06); }
 
 /* ─── Body ───────────────────────────────────────────────────────────────── */
 .__glance_panel_body__ {
@@ -180,7 +180,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  color: #cdd6f4;
+  color: #fff;
   margin-bottom: 8px;
   text-align: left;
 }
@@ -229,6 +229,21 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   color: #89b4fa;
   font-weight: 500;
   border: 1px solid rgba(137, 180, 250, 0.4);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s, color 0.1s;
+}
+.__glance_dom_tree_current__:hover {
+  background: rgba(137, 180, 250, 0.16);
+  border-color: rgba(137, 180, 250, 0.55);
+}
+.__glance_dom_tree_current__:focus-visible {
+  outline: 2px solid #89b4fa;
+  outline-offset: 2px;
+}
+.__glance_dom_tree_current__.__glance_copied__ {
+  background: rgba(166, 227, 161, 0.18);
+  border-color: rgba(166, 227, 161, 0.45);
+  color: #a6e3a1;
 }
 
 .__glance_dom_tree_children__ {
@@ -263,7 +278,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 .__glance_field__ {
   display: flex;
   align-items: center;
-  background: #262637;
+  background: #1e1e1e;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 6px;
   padding: 5px 8px;
@@ -289,7 +304,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 
 .__glance_field_value__ {
   font-size: 11px;
-  color: #cdd6f4;
+  color: #fff;
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -321,7 +336,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 .__glance_icon_row__ {
   display: flex;
   gap: 2px;
-  background: #262637;
+  background: #1e1e1e;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 6px;
   padding: 2px;
@@ -344,7 +359,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 .__glance_icon_btn__:hover {
   background: rgba(255,255,255,0.06);
-  color: #cdd6f4;
+  color: #fff;
 }
 .__glance_icon_btn__.__glance_icon_active__ {
   background: rgba(137, 180, 250, 0.12);
@@ -429,7 +444,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 
 .__glance_val__ {
-  color: #cdd6f4;
+  color: #fff;
   font-size: 10.5px;
   cursor: pointer;
   padding: 1px 4px;
@@ -467,7 +482,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #262637;
+  background: #1e1e1e;
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 6px;
   padding: 5px 8px;
@@ -488,7 +503,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 .__glance_color_hex__ {
   font-size: 11px;
-  color: #cdd6f4;
+  color: #fff;
   cursor: pointer;
   flex: 1;
 }
@@ -503,7 +518,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   background: #1e1e2e;
   border: 1px solid #89b4fa;
   border-radius: 4px;
-  color: #cdd6f4;
+  color: #fff;
   font-family: inherit;
   font-size: 11px;
   padding: 2px 6px;
@@ -541,7 +556,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   left: 0;
   right: 0;
   z-index: 100;
-  background: #262637;
+  background: #1e1e1e;
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 6px;
   margin-top: 2px;
@@ -558,7 +573,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 .__glance_enum_option__ {
   padding: 5px 10px;
   font-size: 11px;
-  color: #cdd6f4;
+  color: #fff;
   cursor: pointer;
   transition: background 0.1s;
 }
@@ -627,10 +642,10 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 
 .__glance_cp_hex_input__ {
-  background: #262637;
+  background: #1e1e1e;
   border: 1px solid rgba(255,255,255,0.08);
   border-radius: 4px;
-  color: #cdd6f4;
+  color: #fff;
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
   font-size: 11px;
   padding: 4px 8px;
@@ -712,7 +727,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 
 .__glance_bm_val__ {
-  color: #cdd6f4;
+  color: #fff;
   text-align: center;
   cursor: pointer;
   border-radius: 2px;
@@ -773,7 +788,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   justify-content: center;
 }
 .__glance_icon_toggle__:hover {
-  color: #cdd6f4;
+  color: #fff;
   border-color: rgba(255,255,255,0.15);
 }
 .__glance_icon_toggle__.__glance_device_active__,
@@ -848,7 +863,7 @@ html.__glance_sidebar_active__ {
   left: 50%;
   transform: translateX(-50%) translateY(12px);
   background: #1e1e2e;
-  color: #cdd6f4;
+  color: #fff;
   font-family: 'JetBrains Mono', 'SF Mono', monospace;
   font-size: 11px;
   padding: 8px 16px;
