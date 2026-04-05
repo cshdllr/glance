@@ -21,6 +21,11 @@
     if (savedW >= 200 && savedW <= 600) sidebarWidth = savedW;
   } catch {}
 
+  let darkMode = false;
+  try {
+    darkMode = localStorage.getItem("__glance_dark__") === "1";
+  } catch {}
+
   // ─── Device Preview ──────────────────────────────────────────────────────
   let devicePreviewActive = false;
   let deviceFrame = null;
@@ -36,12 +41,43 @@
     "flex-direction": ["row","row-reverse","column","column-reverse"],
     "align-items": ["stretch","flex-start","flex-end","center","baseline"],
     "justify-content": ["flex-start","flex-end","center","space-between","space-around","space-evenly"],
+    "flex-wrap": ["nowrap","wrap","wrap-reverse"],
+    "align-self": ["auto","stretch","flex-start","flex-end","center","baseline"],
+    "justify-items": ["stretch","start","end","center","baseline"],
+    "overflow-x": ["visible","hidden","scroll","auto","clip"],
+    "overflow-y": ["visible","hidden","scroll","auto","clip"],
     "font-weight": ["100","200","300","400","500","600","700","800","900"],
     "visibility": ["visible","hidden","collapse"],
   };
   const RANGE_PROPS = {
     "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
   };
+
+  let localFontsLoaded = false;
+  async function loadLocalFonts() {
+    if (localFontsLoaded) return;
+    localFontsLoaded = true;
+    try {
+      if (window.queryLocalFonts) {
+        const fonts = await window.queryLocalFonts();
+        const families = [...new Set(fonts.map(f => f.family))].sort((a, b) =>
+          a.localeCompare(b, undefined, { sensitivity: "base" })
+        );
+        if (families.length > 0) ENUM_PROPS["font-family"] = families;
+      }
+    } catch {}
+    if (!ENUM_PROPS["font-family"]) {
+      const seen = new Set();
+      document.fonts.forEach(f => seen.add(f.family.replace(/['"]/g, "")));
+      const fallbacks = ["Arial", "Helvetica", "Georgia", "Times New Roman",
+        "Courier New", "Verdana", "Trebuchet MS", "Impact", "Comic Sans MS",
+        "system-ui", "sans-serif", "serif", "monospace"];
+      fallbacks.forEach(f => seen.add(f));
+      ENUM_PROPS["font-family"] = [...seen].sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: "base" })
+      );
+    }
+  }
 
   window.__glanceToggle = function() {
     inspectorActive ? deactivate() : activate();
@@ -56,11 +92,17 @@
   function activate() {
     inspectorActive = true;
     hoverEnabled = true;
+    loadLocalFonts();
     createHighlightBox();
     createPanel();
     document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("click", onClick, true);
-    document.addEventListener("scroll", onScroll, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onScroll);
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("scroll", onScroll);
+      window.visualViewport.addEventListener("resize", onScroll);
+    }
     escListener = (e) => { if (e.key === "Escape") deactivate(); };
     document.addEventListener("keydown", escListener, true);
     document.body.style.cursor = "crosshair";
@@ -74,7 +116,13 @@
     hoveredElement = null;
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("click", onClick, true);
-    document.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("scroll", onScroll, true);
+    window.removeEventListener("resize", onScroll);
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener("scroll", onScroll);
+      window.visualViewport.removeEventListener("resize", onScroll);
+    }
+    stopHighlightLoop();
     if (escListener) document.removeEventListener("keydown", escListener, true);
     document.body.style.cursor = "";
     document.documentElement.classList.remove("__glance_sidebar_active__");
@@ -116,10 +164,8 @@
   function positionHighlight(el) {
     if (!highlightBox || !el) return;
     const r = el.getBoundingClientRect();
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    highlightBox.style.left = (r.left + scrollX) + "px";
-    highlightBox.style.top = (r.top + scrollY) + "px";
+    highlightBox.style.left = r.left + "px";
+    highlightBox.style.top = r.top + "px";
     highlightBox.style.width = r.width + "px";
     highlightBox.style.height = r.height + "px";
     highlightBox.style.display = "block";
@@ -135,10 +181,8 @@
       return;
     }
     const r = el.getBoundingClientRect();
-    const scrollX = window.scrollX;
-    const scrollY = window.scrollY;
-    hoverHighlight.style.left = (r.left + scrollX) + "px";
-    hoverHighlight.style.top = (r.top + scrollY) + "px";
+    hoverHighlight.style.left = r.left + "px";
+    hoverHighlight.style.top = r.top + "px";
     hoverHighlight.style.width = r.width + "px";
     hoverHighlight.style.height = r.height + "px";
     hoverHighlight.style.display = "block";
@@ -184,11 +228,13 @@
 
     if (pinnedElement === el) {
       pinnedElement = null;
+      stopHighlightLoop();
       hideHoverHighlight();
       highlightBox.classList.remove("__glance_pinned__");
       document.body.style.cursor = hoverEnabled ? "crosshair" : "";
     } else {
       pinnedElement = el;
+      startHighlightLoop();
       hideHoverHighlight();
       positionHighlight(el);
       renderPanel(el);
@@ -197,6 +243,20 @@
   }
 
   let lastMouseX = 0, lastMouseY = 0;
+
+  let highlightRafId = null;
+  function startHighlightLoop() {
+    if (highlightRafId) return;
+    function tick() {
+      if (!inspectorActive) { highlightRafId = null; return; }
+      if (pinnedElement) positionHighlight(pinnedElement);
+      highlightRafId = requestAnimationFrame(tick);
+    }
+    highlightRafId = requestAnimationFrame(tick);
+  }
+  function stopHighlightLoop() {
+    if (highlightRafId) { cancelAnimationFrame(highlightRafId); highlightRafId = null; }
+  }
 
   function onScroll() {
     if (pinnedElement) positionHighlight(pinnedElement);
@@ -222,9 +282,7 @@
     panel.innerHTML = `
       <div class="__glance_resize_handle__" id="__glance_resize_handle__"></div>
       <div class="__glance_panel_header__">
-        <span class="__glance_logo__">◈ Glance</span>
-        <div class="__glance_header_actions__">
-          <button class="__glance_copy_changes__" id="__glance_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
+        <div class="__glance_header_left__">
           <button class="__glance_icon_toggle__ __glance_hover_active__" id="__glance_hover_toggle__" title="Toggle hover inspection">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 12.5886C12 12.2698 12.25 12 12.575 12C12.7 12 12.85 12.0736 12.95 12.1471L19.8 18.1312C19.925 18.2293 20 18.3764 20 18.5236C20 18.8424 19.75 19.0631 19.425 19.0631H16.475L17.9 21.8589C18.1 22.2513 17.95 22.7173 17.55 22.9135C17.15 23.1097 16.675 22.9625 16.475 22.5701L15.025 19.7007L12.95 22.0306C12.85 22.1532 12.7 22.2023 12.55 22.2023C12.225 22.2023 12 21.9815 12 21.6627V12.5886Z" fill="currentColor"/>
@@ -237,6 +295,22 @@
               <line x1="12" y1="18" x2="12" y2="18"/>
             </svg>
           </button>
+          <button class="__glance_icon_toggle__" id="__glance_theme_toggle__" title="Toggle light/dark mode">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </button>
+        </div>
+        <div class="__glance_header_right__">
+          <button class="__glance_copy_changes__" id="__glance_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
           <button class="__glance_close__" title="Close (Esc)">✕</button>
         </div>
       </div>
@@ -249,7 +323,9 @@
     panel.querySelector("#__glance_copy_changes__").addEventListener("click", copyAllChanges);
     panel.querySelector("#__glance_device_toggle__").addEventListener("click", toggleDevicePreview);
     panel.querySelector("#__glance_hover_toggle__").addEventListener("click", toggleHoverInspection);
+    panel.querySelector("#__glance_theme_toggle__").addEventListener("click", toggleTheme);
     initResizeHandle();
+    applyTheme();
   }
 
   function renderPanel(el) {
@@ -261,38 +337,7 @@
     const cs = elWin.getComputedStyle(el);
     const rect = el.getBoundingClientRect();
     const tag = el.tagName.toLowerCase();
-    const elId = el.id ? `#${el.id}` : "";
-    const classes = el.classList.length
-      ? "." + Array.from(el.classList).slice(0, 3).join(".")
-      : "";
-
-    const contentW = Math.round(rect.width
-      - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight)
-      - parseFloat(cs.borderLeftWidth) - parseFloat(cs.borderRightWidth));
-    const contentH = Math.round(rect.height
-      - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)
-      - parseFloat(cs.borderTopWidth) - parseFloat(cs.borderBottomWidth));
-
     const classList = Array.from(el.classList);
-
-    const posFields = [];
-    if (cs.position !== "static") {
-      ["top","right","bottom","left"].forEach(d => {
-        const v = cs.getPropertyValue(d);
-        if (v && v !== "auto") posFields.push(field(d.charAt(0).toUpperCase(), v, d));
-      });
-    }
-
-    const layoutFields = [];
-    if (cs.display.includes("flex")) {
-      layoutFields.push(field("Dir", cs.flexDirection, "flex-direction"));
-      layoutFields.push(field("Align", cs.alignItems, "align-items"));
-      layoutFields.push(field("Justify", cs.justifyContent, "justify-content"));
-      if (cs.gap !== "normal" && cs.gap !== "0px") layoutFields.push(field("Gap", cs.gap, "gap"));
-    }
-    if (cs.display.includes("grid")) {
-      layoutFields.push(field("Cols", cs.gridTemplateColumns, "grid-template-columns", true));
-    }
 
     const hasParent = el.parentElement && el.parentElement !== el.ownerDocument.documentElement && el.parentElement !== el.ownerDocument.body;
     const children = Array.from(el.children).filter(c =>
@@ -300,324 +345,314 @@
     );
 
     const parentTag = hasParent ? el.parentElement.tagName.toLowerCase() : "";
-    const parentId = hasParent && el.parentElement.id ? "#" + el.parentElement.id : "";
-    const parentCls = hasParent && el.parentElement.classList.length
-      ? "." + Array.from(el.parentElement.classList).slice(0, 1).join(".") : "";
+    const childTag = children.length ? children[0].tagName.toLowerCase() : "";
 
     body.innerHTML = `
-      ${section("Element", `
-        <div class="__glance_dom_tree__">
-          ${hasParent ? `<button class="__glance_dom_tree_item__" id="__glance_nav_parent__" title="Select parent element">
-            <span class="__glance_dom_tree_tag__">&lt;${parentTag}${parentId}${parentCls}&gt;</span>
-          </button>` : ""}
-          <div class="__glance_dom_tree_current__" id="__glance_dom_current__" role="button" tabindex="0" title="Copy element name">
-            <span class="__glance_dom_tree_tag__">&lt;${tag}${elId}${classes}&gt;</span>
-          </div>
-          ${children.length ? `<div class="__glance_dom_tree_children__">
-            ${children.slice(0, 12).map((c, i) => {
-              const cTag = c.tagName.toLowerCase();
-              const cId = c.id ? "#" + c.id : "";
-              const cCls = c.classList.length ? "." + Array.from(c.classList).slice(0,1).join(".") : "";
-              return `<button class="__glance_dom_tree_item__ __glance_dom_child_btn__" data-child-idx="${i}" title="Select child element">
-                <span class="__glance_dom_tree_tag__">&lt;${cTag}${cId}${cCls}&gt;</span>
-              </button>`;
-            }).join("")}
-            ${children.length > 12 ? `<span class="__glance_dom_more__">+${children.length - 12} more</span>` : ""}
-          </div>` : ""}
-        </div>
+      ${section("Typography", `
+        ${propRow("Font", shortFont(cs.fontFamily), "font-family", "enum")}
+        ${propRow("Size", cs.fontSize, "font-size", "numeric")}
+        ${propRow("Line", cs.lineHeight, "line-height", "numeric")}
+        ${propRow("Weight", cs.fontWeight, "font-weight", "enum")}
+        ${propRowColor("Color", cs.color, "color")}
       `)}
 
-      ${classList.length ? section("Classes", `
-        <div class="__glance_classes__">
-          ${classList.map(c => `
-            <button class="__glance_class_pill__" data-classname="${c}">.${c}</button>
-          `).join("")}
-        </div>
-        <div class="__glance_class_details__" id="__glance_class_details__"></div>
-      `) : ""}
-
-      ${section("Position", `
-        <div class="__glance_field_grid__">
-          ${field("X", Math.round(rect.left) + "", null)}
-          ${field("Y", Math.round(rect.top) + "", null)}
-        </div>
-      `)}
-
-      ${section("Layout", `
-        <div class="__glance_field_grid__">
-          ${field("W", px(rect.width), "width")}
-          ${field("H", px(rect.height), "height")}
-          ${field("Display", cs.display, "display")}
-          ${field("Position", cs.position, "position")}
-          ${posFields.join("")}
-          ${cs.position !== "static" ? field("Z", cs.zIndex, "z-index") : ""}
-          ${cs.overflow !== "visible" ? field("Overflow", cs.overflow, "overflow") : ""}
-          ${layoutFields.join("")}
-        </div>
-      `)}
+      ${section("Layout", (() => {
+        const isFlex = cs.display.includes("flex");
+        const parentCs = hasParent ? elWin.getComputedStyle(el.parentElement) : null;
+        const parentIsFlex = parentCs && parentCs.display.includes("flex");
+        return `
+        ${propRow("Width", px(rect.width), "width", "numeric")}
+        ${propRow("Height", px(rect.height), "height", "numeric")}
+        ${propRow("Display", cs.display, "display", "enum")}
+        ${isFlex ? propRow("Direction", cs.flexDirection, "flex-direction", "enum") : ""}
+        ${isFlex ? propRow("Wrap", cs.flexWrap, "flex-wrap", "enum") : ""}
+        ${isFlex ? propRow("Align", cs.alignItems, "align-items", "enum") : ""}
+        ${isFlex ? propRow("Justify", cs.justifyContent, "justify-content", "enum") : ""}
+        ${isFlex && cs.gap !== "normal" && cs.gap !== "0px" ? propRow("Gap", cs.gap, "gap", "numeric") : ""}
+        ${parentIsFlex ? propRow("Align Self", cs.alignSelf, "align-self", "enum") : ""}
+        ${propRow("Position", cs.position, "position", "enum")}
+        ${propRow("Overflow X", cs.overflowX, "overflow-x", "enum")}
+        ${propRow("Overflow Y", cs.overflowY, "overflow-y", "enum")}
+        `;
+      })())}
 
       ${section("Spacing", `
-        <div class="__glance_box_model__">
-          <div class="__glance_bm_zone__ __glance_bm_margin__">
-            <div class="__glance_bm_zone_label__ __glance_bm_margin_label__">margin</div>
-            <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="margin-top">${stripPx(cs.marginTop)}</span>
-            <div class="__glance_bm_mid__">
-              <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="margin-left">${stripPx(cs.marginLeft)}</span>
-              <div class="__glance_bm_zone__ __glance_bm_border_zone__">
-                <div class="__glance_bm_zone_label__ __glance_bm_border_label__">border</div>
-                <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="border-top-width">${stripPx(cs.borderTopWidth)}</span>
-                <div class="__glance_bm_mid__">
-                  <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="border-left-width">${stripPx(cs.borderLeftWidth)}</span>
-                  <div class="__glance_bm_zone__ __glance_bm_padding_zone__">
-                    <div class="__glance_bm_zone_label__ __glance_bm_padding_label__">padding</div>
-                    <span class="__glance_bm_val__ __glance_bm_top__" data-bmprop="padding-top">${stripPx(cs.paddingTop)}</span>
-                    <div class="__glance_bm_mid__">
-                      <span class="__glance_bm_val__ __glance_bm_left__" data-bmprop="padding-left">${stripPx(cs.paddingLeft)}</span>
-                      <div class="__glance_bm_content__">${contentW} × ${contentH}</div>
-                      <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="padding-right">${stripPx(cs.paddingRight)}</span>
-                    </div>
-                    <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="padding-bottom">${stripPx(cs.paddingBottom)}</span>
-                  </div>
-                  <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="border-right-width">${stripPx(cs.borderRightWidth)}</span>
-                </div>
-                <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="border-bottom-width">${stripPx(cs.borderBottomWidth)}</span>
-              </div>
-              <span class="__glance_bm_val__ __glance_bm_right__" data-bmprop="margin-right">${stripPx(cs.marginRight)}</span>
-            </div>
-            <span class="__glance_bm_val__ __glance_bm_bottom__" data-bmprop="margin-bottom">${stripPx(cs.marginBottom)}</span>
+        <div class="__glance_spacing_group__" data-shorthand="margin" data-top="${stripPx(cs.marginTop)}" data-right="${stripPx(cs.marginRight)}" data-bottom="${stripPx(cs.marginBottom)}" data-left="${stripPx(cs.marginLeft)}">
+          <div class="__glance_subsection_label__">margin</div>
+          <div class="__glance_paired_row__">
+            ${propRow("Top", stripPx(cs.marginTop), "margin-top", "numeric")}
+            ${propRow("Bottom", stripPx(cs.marginBottom), "margin-bottom", "numeric")}
+          </div>
+          <div class="__glance_paired_row__">
+            ${propRow("Left", stripPx(cs.marginLeft), "margin-left", "numeric")}
+            ${propRow("Right", stripPx(cs.marginRight), "margin-right", "numeric")}
           </div>
         </div>
+        <div class="__glance_spacing_group__" data-shorthand="padding" data-top="${stripPx(cs.paddingTop)}" data-right="${stripPx(cs.paddingRight)}" data-bottom="${stripPx(cs.paddingBottom)}" data-left="${stripPx(cs.paddingLeft)}">
+          <div class="__glance_subsection_label__">padding</div>
+          <div class="__glance_paired_row__">
+            ${propRow("Top", stripPx(cs.paddingTop), "padding-top", "numeric")}
+            ${propRow("Bottom", stripPx(cs.paddingBottom), "padding-bottom", "numeric")}
+          </div>
+          <div class="__glance_paired_row__">
+            ${propRow("Left", stripPx(cs.paddingLeft), "padding-left", "numeric")}
+            ${propRow("Right", stripPx(cs.paddingRight), "padding-right", "numeric")}
+          </div>
+        </div>
+        ${propRow("Border", stripPx(cs.borderTopWidth), "border-top-width", "numeric")}
       `)}
 
       ${section("Appearance", `
-        ${colorField("Fill", cs.backgroundColor, "background-color")}
-        ${colorField("Color", cs.color, "color")}
-        <div class="__glance_field_grid__" style="margin-top:4px">
-          ${field("Opacity", cs.opacity, "opacity")}
-          ${field("Radius", cs.borderRadius === "0px" ? "0" : cs.borderRadius, "border-radius")}
-          ${cs.borderTopWidth !== "0px" ? field("Border", cs.borderTopWidth + " " + cs.borderTopStyle, "border") : ""}
-          ${cs.boxShadow !== "none" ? field("Shadow", "yes", "box-shadow") : ""}
-        </div>
+        ${propRow("Opacity", cs.opacity, "opacity", "numeric")}
+        ${propRow("Radius", cs.borderRadius === "0px" ? "0" : cs.borderRadius, "border-radius", "numeric")}
       `)}
 
-      ${section("Typography", `
-        <div class="__glance_field_grid__">
-          ${field("Font", shortFont(cs.fontFamily), "font-family", true)}
-          ${field("Weight", cs.fontWeight, "font-weight")}
-          ${field("Size", cs.fontSize, "font-size")}
-          ${field("Line", cs.lineHeight, "line-height")}
-          ${field("Spacing", cs.letterSpacing === "normal" ? "0" : cs.letterSpacing, "letter-spacing")}
-          ${field("Align", cs.textAlign, "text-align")}
-        </div>
+      ${section("CSS Class", `
+        ${propRow("Class", tag, null, "enum", "self")}
+        ${hasParent ? propRow("Parent", parentTag, null, "enum", "parent") : ""}
+        ${children.length ? propRow("Children", childTag, null, "enum", "child") : ""}
+        ${classList.length ? `
+          <div class="__glance_classes__" style="margin-top:8px">
+            ${classList.map(c => `
+              <button class="__glance_class_pill__" data-classname="${c}">.${c}</button>
+            `).join("")}
+          </div>
+          <div class="__glance_class_details__" id="__glance_class_details__"></div>
+        ` : ""}
       `)}
     `;
 
-    attachFieldHandlers(body, el);
-    attachBoxModelHandlers(body, el);
+    attachPropRowHandlers(body, el);
+    attachRowCopyHandlers(body);
     attachClassPillHandlers(body, el);
-    attachDomNavHandlers(body, el, children, hasParent);
+    attachDomNavFromRows(body, el, children, hasParent);
     updateCopyChangesButton();
   }
 
   function selectElement(el) {
     pinnedElement = el;
+    startHighlightLoop();
     positionHighlight(el);
     renderPanel(el);
     document.body.style.cursor = "default";
   }
 
-  function attachDomNavHandlers(container, el, children, hasParent) {
-    const parentBtn = container.querySelector("#__glance_nav_parent__");
-    if (parentBtn && hasParent) {
-      parentBtn.addEventListener("click", (e) => {
+  function showRowCopied(el) {
+    el.querySelectorAll(".__glance_row_copied__").forEach(e => e.remove());
+    const badge = document.createElement("span");
+    badge.className = "__glance_row_copied__";
+    badge.textContent = "Copied";
+    el.style.position = "relative";
+    el.appendChild(badge);
+    badge.addEventListener("animationend", () => badge.remove());
+  }
+
+  function attachRowCopyHandlers(container) {
+    container.querySelectorAll(".__glance_spacing_group__").forEach(group => {
+      const prop = group.dataset.shorthand;
+      const subsectionLabel = group.querySelector(".__glance_subsection_label__");
+
+      const copyGroup = (e) => {
+        if (e.target.closest(".__glance_prop_value__") || e.target.closest(".__glance_edit_input__")) return;
+        if (Date.now() - lastDragEndTime < 100) return;
         e.stopPropagation();
-        selectElement(el.parentElement);
-      });
-    }
-    const currentRow = container.querySelector("#__glance_dom_current__");
-    if (currentRow) {
-      const copyElementName = (e) => {
-        e.stopPropagation();
-        const tagEl = currentRow.querySelector(".__glance_dom_tree_tag__");
-        const text = tagEl ? tagEl.textContent.trim() : "";
-        if (!text) return;
+        const t = group.dataset.top || "0";
+        const r = group.dataset.right || "0";
+        const b = group.dataset.bottom || "0";
+        const l = group.dataset.left || "0";
+        const addPx = (v) => v === "0" ? "0" : v + "px";
+        const text = `${prop}: ${addPx(t)} ${addPx(r)} ${addPx(b)} ${addPx(l)};`;
         navigator.clipboard.writeText(text).catch(() => {});
-        currentRow.classList.add("__glance_copied__");
-        setTimeout(() => currentRow.classList.remove("__glance_copied__"), 800);
+        showRowCopied(group);
       };
-      currentRow.addEventListener("click", copyElementName);
-      currentRow.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          copyElementName(e);
-        }
-      });
-    }
-    container.querySelectorAll(".__glance_dom_child_btn__").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const idx = parseInt(btn.dataset.childIdx, 10);
-        if (children[idx]) selectElement(children[idx]);
-      });
-    });
-  }
 
-  function attachBoxModelHandlers(container, targetEl) {
-    container.querySelectorAll(".__glance_bm_val__[data-bmprop]").forEach(valSpan => {
-      valSpan.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (valSpan.querySelector(".__glance_edit_input__")) return;
-        const cssProp = valSpan.dataset.bmprop;
-        const currentVal = valSpan.textContent.trim();
-        const input = document.createElement("input");
-        input.type = "text";
-        input.className = "__glance_edit_input__";
-        input.value = currentVal;
-        valSpan.textContent = "";
-        valSpan.appendChild(input);
-        input.focus();
-        input.select();
+      group.addEventListener("click", copyGroup);
 
-        const commit = () => {
-          const newVal = input.value.trim();
-          input.remove();
-          const withUnit = newVal && !/[a-z%]/i.test(newVal) ? newVal + "px" : newVal;
-          if (newVal && newVal !== currentVal) {
-            applyChange(targetEl, cssProp, currentVal + "px", withUnit);
-            renderPanel(targetEl);
-          } else {
-            valSpan.textContent = currentVal;
-          }
-        };
-
-        const nudge = (dir, amount) => {
-          const num = parseFloat(input.value);
-          if (isNaN(num)) return false;
-          const newNum = Math.round((num + dir * amount) * 100) / 100;
-          input.value = String(newNum);
-          const withUnit = newNum + "px";
-          applyChange(targetEl, cssProp, null, withUnit);
-          positionHighlight(targetEl);
-          return true;
-        };
-
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") { e.preventDefault(); commit(); return; }
-          if (e.key === "Escape") { e.preventDefault(); input.remove(); valSpan.textContent = currentVal; return; }
-          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-            const dir = e.key === "ArrowUp" ? 1 : -1;
-            const step = e.shiftKey ? 10 : 1;
-            if (nudge(dir, step)) e.preventDefault();
-          }
+      group.querySelectorAll(".__glance_prop_row__").forEach(row => {
+        row.removeAttribute("style");
+        row.addEventListener("click", (e) => {
+          if (e.target.closest(".__glance_prop_value__") || e.target.closest(".__glance_edit_input__")) return;
           e.stopPropagation();
+          copyGroup(e);
         });
-        input.addEventListener("blur", commit);
-        input.addEventListener("click", (e) => e.stopPropagation());
       });
     });
-  }
 
-  function attachFieldHandlers(container, targetEl) {
-    container.querySelectorAll(".__glance_field_value__, .__glance_color_hex__").forEach(v => {
-      v.addEventListener("click", (e) => {
-        if (v.querySelector(".__glance_edit_input__")) return;
-        navigator.clipboard.writeText(v.dataset.copy || v.textContent.trim()).catch(() => {});
-        v.classList.add("__glance_copied__");
-        setTimeout(() => v.classList.remove("__glance_copied__"), 800);
-      });
-      const cssProp = v.dataset.cssprop;
-      if (cssProp) {
-        v.addEventListener("dblclick", (e) => {
-          e.stopPropagation();
-          if (v.querySelector(".__glance_edit_input__")) return;
-          startEditing(v, cssProp, targetEl);
-        });
-      }
-    });
-
-    // Label interactions: scrub + dropdown
-    container.querySelectorAll(".__glance_field_label__").forEach(lbl => {
-      const fieldType = lbl.dataset.fieldtype;
-      const valEl = lbl.nextElementSibling;
+    container.querySelectorAll(".__glance_prop_row__").forEach(row => {
+      if (row.closest(".__glance_spacing_group__")) return;
+      const valEl = row.querySelector(".__glance_prop_value__");
       if (!valEl) return;
       const cssProp = valEl.dataset.cssprop;
       if (!cssProp) return;
 
-      if (fieldType === "numeric" || fieldType === "range") {
-        lbl.addEventListener("mousedown", (e) => {
-          e.preventDefault();
-          startScrub(e, lbl, valEl, cssProp, targetEl, fieldType);
-        });
-      } else if (fieldType === "enum") {
-        lbl.addEventListener("click", (e) => {
-          e.stopPropagation();
-          showEnumDropdown(lbl, valEl, cssProp, targetEl);
-        });
-      }
-    });
-
-    // Color swatch click -> color picker
-    container.querySelectorAll(".__glance_color_preview__").forEach(swatch => {
-      const colorField = swatch.closest(".__glance_color_field__");
-      if (!colorField) return;
-      const hexEl = colorField.querySelector(".__glance_color_hex__");
-      if (!hexEl) return;
-      const cssProp = hexEl.dataset.cssprop;
-      if (!cssProp) return;
-      swatch.addEventListener("click", (e) => {
+      row.addEventListener("click", (e) => {
+        if (e.target.closest(".__glance_prop_value__") || e.target.closest(".__glance_edit_input__")) return;
+        if (Date.now() - lastDragEndTime < 100) return;
         e.stopPropagation();
-        showColorPicker(swatch, hexEl, cssProp, targetEl);
+        const val = valEl.dataset.copy || valEl.textContent.trim();
+        const text = `${cssProp}: ${val};`;
+        navigator.clipboard.writeText(text).catch(() => {});
+        showRowCopied(row);
       });
     });
   }
 
-  // ─── Scrub (numeric + range) ───────────────────────────────────────────────
-  function startScrub(e, lbl, valEl, cssProp, targetEl, fieldType) {
-    const startX = e.clientX;
-    const raw = valEl.dataset.copy || valEl.textContent.trim();
-    const match = raw.match(/^(-?[\d.]+)(.*)$/);
-    if (!match) return;
-    const startNum = parseFloat(match[1]);
-    if (isNaN(startNum)) return;
-    const unit = match[2] || "";
-    const rangeDef = RANGE_PROPS[cssProp];
-
-    lbl.classList.add("__glance_scrubbing__");
-    document.body.style.cursor = "ew-resize";
-    document.body.style.userSelect = "none";
-
-    const onMove = (ev) => {
-      const delta = ev.clientX - startX;
-      let step, shiftStep;
-      if (rangeDef) {
-        step = rangeDef.step;
-        shiftStep = rangeDef.shiftStep;
-      } else {
-        step = 1;
-        shiftStep = 10;
+  function attachDomNavFromRows(container, el, children, hasParent) {
+    container.querySelectorAll(".__glance_prop_row__[data-nav]").forEach(row => {
+      const nav = row.dataset.nav;
+      const chevron = row.querySelector(".__glance_chevron__");
+      const valEl = row.querySelector(".__glance_prop_value__");
+      if (nav === "parent" && hasParent) {
+        const handler = (e) => { e.stopPropagation(); selectElement(el.parentElement); };
+        if (chevron) chevron.addEventListener("click", handler);
+        if (valEl) valEl.addEventListener("click", handler);
+      } else if (nav === "child" && children.length) {
+        const handler = (e) => { e.stopPropagation(); selectElement(children[0]); };
+        if (chevron) chevron.addEventListener("click", handler);
+        if (valEl) valEl.addEventListener("click", handler);
+      } else if (nav === "self") {
+        if (valEl) {
+          valEl.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const text = valEl.dataset.copy || valEl.textContent.trim();
+            if (!text) return;
+            navigator.clipboard.writeText(text).catch(() => {});
+            valEl.classList.add("__glance_copied__");
+            setTimeout(() => valEl.classList.remove("__glance_copied__"), 800);
+          });
+        }
       }
-      const mult = ev.shiftKey ? shiftStep : step;
-      let newVal = startNum + delta * mult;
-      if (rangeDef) newVal = Math.max(rangeDef.min, Math.min(rangeDef.max, newVal));
-      newVal = Math.round(newVal * 1000) / 1000;
-      const newStr = newVal + unit;
-      valEl.textContent = newStr;
-      valEl.dataset.copy = newStr;
-      applyChange(targetEl, cssProp, raw, newStr);
-      positionHighlight(targetEl);
-    };
-
-    const onUp = () => {
-      lbl.classList.remove("__glance_scrubbing__");
-      document.body.style.cursor = pinnedElement ? "default" : "crosshair";
-      document.body.style.userSelect = "";
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-    };
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+    });
   }
+
+  const DRAG_THRESHOLD = 3;
+  let lastDragEndTime = 0;
+
+  function attachPropRowHandlers(container, targetEl) {
+    container.querySelectorAll(".__glance_prop_row__").forEach(row => {
+      const valEl = row.querySelector(".__glance_prop_value__");
+      if (!valEl) return;
+      const cssProp = valEl.dataset.cssprop;
+      const fieldType = row.dataset.fieldtype || "";
+
+      if (fieldType === "color") {
+        const swatch = row.querySelector(".__glance_color_preview__");
+        valEl.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (swatch && cssProp) showColorPicker(swatch, valEl, cssProp, targetEl);
+        });
+        if (swatch) {
+          swatch.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (cssProp) showColorPicker(swatch, valEl, cssProp, targetEl);
+          });
+        }
+        return;
+      }
+
+      if ((fieldType === "numeric" || fieldType === "range") && cssProp) {
+        valEl.style.cursor = "ew-resize";
+        valEl.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          let dragged = false;
+          const raw = valEl.dataset.copy || valEl.textContent.trim();
+          const match = raw.match(/^(-?[\d.]+)(.*)$/);
+          const startNum = match ? parseFloat(match[1]) : NaN;
+          const unit = match ? (match[2] || "") : "";
+          const rangeDef = RANGE_PROPS[cssProp];
+
+          const onMove = (ev) => {
+            const dx = ev.clientX - startX;
+            if (!dragged && Math.abs(dx) >= DRAG_THRESHOLD) dragged = true;
+            if (!dragged || isNaN(startNum)) return;
+            document.body.style.cursor = "ew-resize";
+            document.body.style.userSelect = "none";
+            let step, shiftStep;
+            if (rangeDef) { step = rangeDef.step; shiftStep = rangeDef.shiftStep; }
+            else { step = 1; shiftStep = 10; }
+            const mult = ev.shiftKey ? shiftStep : step;
+            let newVal = startNum + dx * mult;
+            if (rangeDef) newVal = Math.max(rangeDef.min, Math.min(rangeDef.max, newVal));
+            newVal = Math.round(newVal * 1000) / 1000;
+            const newStr = newVal + unit;
+            valEl.textContent = newStr;
+            valEl.dataset.copy = newStr;
+            applyChange(targetEl, cssProp, raw, newStr);
+            positionHighlight(targetEl);
+          };
+          const onUp = () => {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            document.body.style.cursor = pinnedElement ? "default" : "crosshair";
+            document.body.style.userSelect = "";
+            if (dragged) { lastDragEndTime = Date.now(); }
+            else { startEditing(valEl, cssProp, targetEl); }
+          };
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+        return;
+      }
+
+      if (fieldType === "enum" && cssProp) {
+        valEl.style.cursor = "pointer";
+        valEl.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const startX = e.clientX;
+          let dragged = false;
+          const options = ENUM_PROPS[cssProp];
+          if (!options) { return; }
+          const startVal = valEl.dataset.copy || valEl.textContent.trim();
+          let startIdx = options.indexOf(startVal);
+          if (startIdx < 0) startIdx = 0;
+          let lastIdx = startIdx;
+
+          const onMove = (ev) => {
+            const dx = ev.clientX - startX;
+            if (!dragged && Math.abs(dx) >= DRAG_THRESHOLD) dragged = true;
+            if (!dragged) return;
+            document.body.style.cursor = "ew-resize";
+            document.body.style.userSelect = "none";
+            const step = Math.round(dx / 30);
+            let newIdx = startIdx + step;
+            newIdx = Math.max(0, Math.min(options.length - 1, newIdx));
+            if (newIdx !== lastIdx) {
+              lastIdx = newIdx;
+              const newVal = options[newIdx];
+              valEl.textContent = newVal;
+              valEl.dataset.copy = newVal;
+              applyChange(targetEl, cssProp, startVal, newVal);
+              positionHighlight(targetEl);
+            }
+          };
+          const onUp = () => {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", onUp);
+            document.body.style.cursor = pinnedElement ? "default" : "crosshair";
+            document.body.style.userSelect = "";
+            if (dragged) { lastDragEndTime = Date.now(); }
+            else { showEnumDropdown(row, valEl, cssProp, targetEl); }
+          };
+          document.addEventListener("mousemove", onMove);
+          document.addEventListener("mouseup", onUp);
+        });
+        return;
+      }
+
+      valEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (valEl.querySelector(".__glance_edit_input__")) return;
+        navigator.clipboard.writeText(valEl.dataset.copy || valEl.textContent.trim()).catch(() => {});
+        valEl.classList.add("__glance_copied__");
+        setTimeout(() => valEl.classList.remove("__glance_copied__"), 800);
+      });
+    });
+  }
+
+  // startScrub removed — scrubbing is handled inline in attachPropRowHandlers
 
   // ─── Enum dropdown ─────────────────────────────────────────────────────────
   let activeDropdown = null;
@@ -636,8 +671,9 @@
     }
   }
 
-  function showEnumDropdown(lbl, valEl, cssProp, targetEl) {
-    if (activeDropdownLabel === lbl) {
+  function showEnumDropdown(rowOrLabel, valEl, cssProp, targetEl) {
+    const fieldEl = rowOrLabel.closest(".__glance_prop_row__") || rowOrLabel;
+    if (activeDropdownLabel === fieldEl) {
       dismissDropdown();
       return;
     }
@@ -652,6 +688,7 @@
       const item = document.createElement("div");
       item.className = "__glance_enum_option__";
       if (opt === currentVal) item.classList.add("__glance_enum_active__");
+      if (cssProp === "font-family") item.style.fontFamily = opt;
       item.textContent = opt;
       item.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -662,12 +699,13 @@
       dd.appendChild(item);
     });
 
-    const fieldEl = lbl.closest(".__glance_field__");
-    if (!fieldEl) return;
     fieldEl.style.position = "relative";
     fieldEl.appendChild(dd);
     activeDropdown = dd;
-    activeDropdownLabel = lbl;
+    activeDropdownLabel = fieldEl;
+
+    const activeItem = dd.querySelector(".__glance_enum_active__");
+    if (activeItem) activeItem.scrollIntoView({ block: "nearest" });
 
     setTimeout(() => document.addEventListener("click", onDropdownOutsideClick, true), 0);
   }
@@ -753,7 +791,7 @@
       </div>
     `;
 
-    const colorField = swatch.closest(".__glance_color_field__");
+    const colorField = swatch.closest(".__glance_prop_row__") || swatch.closest(".__glance_color_field__");
     if (!colorField) return;
     colorField.style.position = "relative";
     colorField.appendChild(picker);
@@ -841,9 +879,9 @@
       const ctx = alphaCanvas.getContext("2d");
       const w = alphaCanvas.width, h = alphaCanvas.height;
       // checkerboard
-      ctx.fillStyle = "#2a2a3a";
+      ctx.fillStyle = "#e0e0e0";
       ctx.fillRect(0, 0, w, h);
-      ctx.fillStyle = "#3a3a4a";
+      ctx.fillStyle = "#ccc";
       for (let x = 0; x < w; x += 6) {
         for (let y = 0; y < h; y += 6) {
           if ((Math.floor(x / 6) + Math.floor(y / 6)) % 2 === 0) ctx.fillRect(x, y, 6, 6);
@@ -931,7 +969,7 @@
   }
 
   function attachValHandlers(container, targetEl) {
-    container.querySelectorAll(".__glance_val__").forEach(v => {
+    container.querySelectorAll(".__glance_val__, .__glance_prop_value__[data-cssprop]").forEach(v => {
       v.addEventListener("click", (e) => {
         if (v.querySelector(".__glance_edit_input__")) return;
         navigator.clipboard.writeText(v.dataset.copy || v.textContent.trim()).catch(() => {});
@@ -955,9 +993,15 @@
     input.type = "text";
     input.className = "__glance_edit_input__";
     input.value = currentVal;
+    const syncInputSize = () => {
+      const len = input.value.length;
+      input.size = Math.max(6, len + 1);
+    };
+    syncInputSize();
     valEl.textContent = "";
     valEl.querySelectorAll(".__glance_swatch__").forEach(s => s.remove());
     valEl.appendChild(input);
+    input.addEventListener("input", syncInputSize);
     input.focus();
     input.select();
 
@@ -1140,6 +1184,25 @@
     sidebarWidth = Math.max(200, Math.min(600, w));
     if (panel) panel.style.width = sidebarWidth + "px";
     document.documentElement.style.setProperty("--__glance-sidebar-w", sidebarWidth + "px");
+  }
+
+  // ─── Theme Toggle ──────────────────────────────────────────────────────────
+  function applyTheme() {
+    if (!panel) return;
+    panel.classList.toggle("__glance_dark__", darkMode);
+    const btn = panel.querySelector("#__glance_theme_toggle__");
+    if (btn) {
+      btn.classList.toggle("__glance_theme_dark_active__", darkMode);
+      btn.innerHTML = darkMode
+        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+    }
+  }
+
+  function toggleTheme() {
+    darkMode = !darkMode;
+    try { localStorage.setItem("__glance_dark__", darkMode ? "1" : "0"); } catch {}
+    applyTheme();
   }
 
   // ─── Hover Inspection Toggle ────────────────────────────────────────────────
@@ -1350,50 +1413,36 @@
     return "";
   }
 
-  function field(label, value, cssProp, full) {
+  function propRow(label, value, cssProp, hint, navAttr) {
     if (!value || value === "" || value === "undefined") return "";
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
     const isChanged = cssProp && pinnedElement && changedStyles.has(pinnedElement)
       && changedStyles.get(pinnedElement).has(cssProp);
     const changedClass = isChanged ? " __glance_val_changed__" : "";
-    const fullClass = full ? " __glance_field_full__" : "";
-    const fieldType = classifyField(cssProp, value);
-    const labelAttrs = [];
-    if (fieldType === "numeric" || fieldType === "range") labelAttrs.push('data-scrub');
-    if (fieldType === "enum") labelAttrs.push('data-enum');
-    if (fieldType) labelAttrs.push(`data-fieldtype="${fieldType}"`);
+    const fieldType = hint || classifyField(cssProp, value);
+    const ftAttr = fieldType ? ` data-fieldtype="${fieldType}"` : "";
+    const navData = navAttr ? ` data-nav="${navAttr}"` : "";
+
     return `
-      <div class="__glance_field__${fullClass}">
-        <span class="__glance_field_label__" ${labelAttrs.join(" ")}>${label}</span>
-        <span class="__glance_field_value__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
+      <div class="__glance_prop_row__"${navData}${ftAttr}>
+        <span class="__glance_prop_label__">${label}</span>
+        <span class="__glance_prop_dots__"></span>
+        <span class="__glance_prop_value__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
       </div>`;
   }
 
-  function colorField(label, color, cssProp) {
+  function propRowColor(label, color, cssProp) {
     if (!color) return "";
     const isTransparent = color === "transparent" || color === "rgba(0, 0, 0, 0)";
     const hex = isTransparent ? "transparent" : rgbToHex(color);
-    const opacity = isTransparent ? "0%" : parseOpacity(color);
     const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
     const preview = isTransparent ? "transparent" : color;
     return `
-      <div class="__glance_color_field__">
+      <div class="__glance_prop_row__" data-fieldtype="color">
+        <span class="__glance_prop_label__">${label}</span>
+        <span class="__glance_prop_dots__"></span>
         <div class="__glance_color_preview__" style="background:${preview}"></div>
-        <span class="__glance_color_hex__" data-copy="${color}"${propAttr}>${hex}</span>
-        <span class="__glance_color_opacity__">${opacity}</span>
-      </div>`;
-  }
-
-  function row(label, value, cssProp) {
-    if (!value || value === "" || value === "undefined") return "";
-    const propAttr = cssProp ? ` data-cssprop="${cssProp}"` : "";
-    const isChanged = cssProp && pinnedElement && changedStyles.has(pinnedElement)
-      && changedStyles.get(pinnedElement).has(cssProp);
-    const changedClass = isChanged ? " __glance_val_changed__" : "";
-    return `
-      <div class="__glance_row__">
-        <span class="__glance_key__">${label}</span>
-        <span class="__glance_val__${changedClass}" data-copy="${value}"${propAttr}>${value}</span>
+        <span class="__glance_prop_value__" data-copy="${color}"${propAttr}>${hex}</span>
       </div>`;
   }
 

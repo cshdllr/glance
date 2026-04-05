@@ -1,9 +1,16 @@
-/* ─── Highlight overlay ──────────────────────────────────────────────────── */
+/* ─── Design tokens (shared where highlights + panel need the same) ───────── */
+#__glance_highlight__,
+#__glance_hover_highlight__ {
+  --glance-accent: #18a0fb;
+  --glance-font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+/* ─── Highlight overlay (fixed = tracks scroll in any container + mobile) ─ */
 #__glance_highlight__ {
-  position: absolute;
+  position: fixed;
   pointer-events: none;
   z-index: 2147483646;
-  outline: 1px dashed #18a0fb;
+  outline: 1px dashed var(--glance-accent);
   outline-offset: -1px;
   background: rgba(24, 160, 251, 0.04);
   border-radius: 2px;
@@ -11,7 +18,7 @@
 }
 
 #__glance_highlight__.__glance_pinned__ {
-  outline: 2px solid #18a0fb;
+  outline: 2px solid var(--glance-accent);
   background: rgba(24, 160, 251, 0.06);
 }
 
@@ -20,9 +27,9 @@
   position: absolute;
   bottom: 100%;
   left: -1px;
-  background: #18a0fb;
+  background: var(--glance-accent);
   color: #fff;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+  font-family: var(--glance-font-mono);
   font-size: 10px;
   line-height: 1;
   padding: 3px 6px;
@@ -35,10 +42,10 @@
 }
 
 #__glance_hover_highlight__ {
-  position: absolute;
+  position: fixed;
   pointer-events: none;
   z-index: 2147483645;
-  outline: 1px dashed #18a0fb;
+  outline: 1px dashed var(--glance-accent);
   outline-offset: -1px;
   background: rgba(24, 160, 251, 0.04);
   border-radius: 2px;
@@ -52,6 +59,18 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 
 /* ─── Panel ──────────────────────────────────────────────────────────────── */
 #__glance_panel__ {
+  --glance-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --glance-font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --glance-text: #1a1a1a;
+  --glance-text-muted: #888;
+  --glance-text-subtle: #999;
+  --glance-border: #e5e5e5;
+  --glance-border-soft: #f0f0f0;
+  --glance-dots: #ccc;
+  --glance-bg: #fff;
+  --glance-bg-input: #f5f5f5;
+  --glance-accent: #18a0fb;
+  --glance-row-min-h: 28px;
   position: fixed;
   z-index: 2147483647;
   top: 0;
@@ -61,12 +80,69 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   max-height: 100vh;
   display: flex;
   flex-direction: column;
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
-  font-size: 11px;
-  background: #000000;
+  font-family: var(--glance-font-sans);
+  font-size: 13px;
+  background: var(--glance-bg);
   overflow: hidden;
-  color: #fff;
-  border-left: 1px solid rgba(255,255,255,0.08);
+  color: var(--glance-text);
+  border-left: 1px solid var(--glance-border);
+}
+
+/* ─── Dark mode overrides ─────────────────────────────────────────────── */
+#__glance_panel__.__glance_dark__ {
+  --glance-text: #e0e0e0;
+  --glance-text-muted: #888;
+  --glance-text-subtle: #666;
+  --glance-border: #333;
+  --glance-border-soft: #2a2a2a;
+  --glance-dots: #444;
+  --glance-bg: #1a1a1a;
+  --glance-bg-input: #252525;
+}
+
+#__glance_panel__.__glance_dark__ .__glance_close__:hover {
+  color: #ddd;
+  background: rgba(255,255,255,0.08);
+}
+
+#__glance_panel__.__glance_dark__ .__glance_icon_toggle__ {
+  border-color: #333;
+  color: #777;
+}
+#__glance_panel__.__glance_dark__ .__glance_icon_toggle__:hover {
+  color: #ccc;
+  border-color: #555;
+}
+
+#__glance_panel__.__glance_dark__ .__glance_class_pill__ {
+  background: #2a2a2a;
+  color: #aaa;
+  border-color: #3a3a3a;
+}
+#__glance_panel__.__glance_dark__ .__glance_class_pill__:hover {
+  background: #333;
+  color: #ccc;
+  border-color: #555;
+}
+
+#__glance_panel__.__glance_dark__ .__glance_class_rule__ {
+  border-top-color: #2a2a2a;
+}
+
+#__glance_panel__.__glance_dark__ .__glance_enum_dropdown__ {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+#__glance_panel__.__glance_dark__ .__glance_color_picker__ {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+#__glance_panel__.__glance_dark__ .__glance_prop_value__:hover {
+  background: rgba(255,255,255,0.06);
+}
+
+#__glance_panel__.__glance_dark__ .__glance_val__:hover {
+  background: rgba(255,255,255,0.06);
 }
 
 /* ─── Resize handle ──────────────────────────────────────────────────────── */
@@ -81,29 +157,24 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 }
 .__glance_resize_handle__:hover,
 .__glance_resize_handle__.__glance_resizing__ {
-  background: rgba(137, 180, 250, 0.4);
+  background: rgba(24, 160, 251, 0.4);
 }
+
 /* ─── Header ─────────────────────────────────────────────────────────────── */
 .__glance_panel_header__ {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: #000000;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: var(--glance-bg);
+  border-bottom: 1px solid var(--glance-border);
   user-select: none;
   flex-shrink: 0;
   cursor: default;
 }
 
-.__glance_logo__ {
-  font-size: 11px;
-  font-weight: 600;
-  color: #cba6f7;
-  letter-spacing: 0.02em;
-}
-
-.__glance_header_actions__ {
+.__glance_header_left__,
+.__glance_header_right__ {
   display: flex;
   align-items: center;
   gap: 4px;
@@ -111,12 +182,12 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 
 .__glance_copy_changes__ {
   background: none;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid var(--glance-border);
   border-radius: 4px;
-  color: #585b70;
+  color: var(--glance-text-subtle);
   cursor: pointer;
   font-family: inherit;
-  font-size: 9px;
+  font-size: 10px;
   padding: 2px 7px;
   line-height: 1.4;
   transition: all 0.15s;
@@ -125,63 +196,62 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 
 .__glance_copy_changes__.__glance_has_changes__ {
   display: block;
-  color: #fab387;
-  border-color: rgba(250, 179, 135, 0.3);
-  background: rgba(250, 179, 135, 0.08);
+  color: #e67e22;
+  border-color: rgba(230, 126, 34, 0.3);
+  background: rgba(230, 126, 34, 0.06);
 }
 
 .__glance_copy_changes__.__glance_has_changes__:hover {
-  background: rgba(250, 179, 135, 0.15);
-  border-color: rgba(250, 179, 135, 0.5);
-  color: #ffd0a8;
+  background: rgba(230, 126, 34, 0.12);
+  border-color: rgba(230, 126, 34, 0.5);
+  color: #d35400;
 }
 
 .__glance_close__ {
   background: none;
   border: none;
-  color: #585b70;
+  color: var(--glance-text-subtle);
   cursor: pointer;
-  font-size: 12px;
+  font-size: 13px;
   padding: 4px;
   line-height: 1;
   transition: color 0.15s;
   border-radius: 4px;
 }
-.__glance_close__:hover { color: #fff; background: rgba(255,255,255,0.06); }
+.__glance_close__:hover { color: #333; background: rgba(0,0,0,0.04); }
 
 /* ─── Body ───────────────────────────────────────────────────────────────── */
 .__glance_panel_body__ {
   overflow-y: auto;
   flex: 1;
   scrollbar-width: thin;
-  scrollbar-color: #313244 transparent;
+  scrollbar-color: #ddd transparent;
 }
 .__glance_panel_body__::-webkit-scrollbar { width: 4px; }
 .__glance_panel_body__::-webkit-scrollbar-track { background: transparent; }
-.__glance_panel_body__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+.__glance_panel_body__::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
 .__glance_empty__ {
   padding: 32px 16px;
-  color: #45475a;
+  color: var(--glance-text-subtle);
   text-align: center;
-  font-size: 11px;
+  font-size: 13px;
   line-height: 1.6;
 }
 
 /* ─── Sections ───────────────────────────────────────────────────────────── */
 .__glance_section__ {
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding: 10px 12px;
+  padding: 16px 16px 12px;
   text-align: left;
 }
 
 .__glance_section_title__ {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-transform: none;
-  color: #fff;
-  margin-bottom: 8px;
+  color: var(--glance-text);
+  margin-bottom: 12px;
   text-align: left;
 }
 
@@ -189,401 +259,232 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   padding: 0;
 }
 
-/* ─── DOM tree ───────────────────────────────────────────────────────────── */
-.__glance_dom_tree__ {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
-  font-size: 10px;
-  line-height: 1.4;
-}
-
-.__glance_dom_tree_tag__ {
-  word-break: break-all;
-}
-
-.__glance_dom_tree_item__ {
-  display: block;
-  background: none;
-  border: none;
-  color: #585b70;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: inherit;
-  padding: 3px 6px;
-  border-radius: 4px;
-  text-align: left;
-  transition: background 0.1s, color 0.1s;
-}
-.__glance_dom_tree_item__:hover {
-  background: rgba(137, 180, 250, 0.08);
-  color: #89b4fa;
-}
-
-.__glance_dom_tree_current__ {
-  padding: 4px 8px;
-  margin-left: 12px;
-  background: rgba(137, 180, 250, 0.1);
-  border-radius: 4px;
-  color: #89b4fa;
-  font-weight: 500;
-  border: 1px solid rgba(137, 180, 250, 0.4);
-  cursor: pointer;
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
-}
-.__glance_dom_tree_current__:hover {
-  background: rgba(137, 180, 250, 0.16);
-  border-color: rgba(137, 180, 250, 0.55);
-}
-.__glance_dom_tree_current__:focus-visible {
-  outline: 2px solid #89b4fa;
-  outline-offset: 2px;
-}
-.__glance_dom_tree_current__.__glance_copied__ {
-  background: rgba(166, 227, 161, 0.18);
-  border-color: rgba(166, 227, 161, 0.45);
-  color: #a6e3a1;
-}
-
-.__glance_dom_tree_children__ {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  margin-left: 24px;
-}
-
-.__glance_dom_tree_children__ .__glance_dom_tree_item__ {
-  color: #6c7086;
-  font-size: 9.5px;
-  padding: 2px 6px;
-}
-.__glance_dom_tree_children__ .__glance_dom_tree_item__:hover {
-  color: #89b4fa;
-}
-
-.__glance_dom_more__ {
+/* ─── Subsection labels (MARGIN, PADDING) ────────────────────────────────── */
+.__glance_subsection_label__ {
   font-size: 9px;
-  color: #45475a;
-  padding: 2px 6px;
+  font-weight: 600;
+  color: #999;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+.__glance_subsection_label__:first-child {
+  margin-top: 0;
 }
 
-/* ─── Figma-style field grid ─────────────────────────────────────────────── */
-.__glance_field_grid__ {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
-.__glance_field__ {
+/* ─── Property rows (dotted leader) ──────────────────────────────────────── */
+#__glance_panel__ .__glance_prop_row__ {
   display: flex;
   align-items: center;
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 6px;
-  padding: 5px 8px;
-  gap: 6px;
-  min-height: 28px;
-  transition: border-color 0.12s;
-}
-.__glance_field__:hover {
-  border-color: rgba(255,255,255,0.12);
-}
-
-.__glance_field_full__ {
-  grid-column: 1 / -1;
+  gap: 0;
+  min-height: var(--glance-row-min-h);
+  line-height: 1.3;
+  position: relative;
+  border-radius: 4px;
+  padding: 0 4px;
+  margin: 0 -4px;
+  cursor: pointer;
+  transition: background 0.1s;
 }
 
-.__glance_field_label__ {
-  font-size: 10px;
-  color: #585b70;
+#__glance_panel__ .__glance_prop_row__:hover {
+  background: rgba(0,0,0,0.025);
+}
+#__glance_panel__.__glance_dark__ .__glance_prop_row__:hover {
+  background: rgba(255,255,255,0.03);
+}
+
+.__glance_prop_label__ {
+  font-size: 13px;
+  color: var(--glance-text-muted);
   flex-shrink: 0;
-  min-width: 14px;
-  text-align: left;
+  white-space: nowrap;
+  align-self: center;
 }
 
-.__glance_field_value__ {
-  font-size: 11px;
-  color: #fff;
+.__glance_prop_dots__ {
   flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  border-bottom: 1px dotted var(--glance-dots);
+  margin: 0 6px;
+  min-width: 12px;
+  align-self: center;
+  height: 0;
+}
+
+/* ─── Spacing group (margin/padding) hover ───────────────────────────────── */
+.__glance_spacing_group__ {
+  border-radius: 5px;
+  padding: 0 4px;
+  margin: 0 -4px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.__glance_spacing_group__:hover {
+  background: rgba(0,0,0,0.025);
+}
+#__glance_panel__.__glance_dark__ .__glance_spacing_group__:hover {
+  background: rgba(255,255,255,0.03);
+}
+.__glance_spacing_group__:hover .__glance_prop_row__:hover {
+  background: none;
+}
+.__glance_spacing_group__ .__glance_prop_row__ {
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Floating "Copied" indicator ─────────────────────────────────────────── */
+.__glance_row_copied__ {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+  font-family: var(--glance-font-sans);
+  color: #27ae60;
+  pointer-events: none;
+  opacity: 1;
+  animation: __glance_float_copied__ 0.8s ease forwards;
+  z-index: 5;
+}
+
+@keyframes __glance_float_copied__ {
+  0% { opacity: 1; transform: translate(-50%, -50%); }
+  60% { opacity: 1; transform: translate(-50%, calc(-50% - 14px)); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 20px)); }
+}
+
+.__glance_prop_value__ {
+  font-family: var(--glance-font-mono);
+  font-size: 13px;
+  color: var(--glance-text);
+  flex-shrink: 0;
   white-space: nowrap;
   cursor: pointer;
   border-radius: 3px;
-  padding: 1px 2px;
-  margin: -1px -2px;
+  padding: 0 3px;
   transition: background 0.1s, color 0.1s;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
-}
-.__glance_field_value__:hover {
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-}
-.__glance_field_value__.__glance_copied__ {
-  background: rgba(166, 227, 161, 0.15);
-  color: #a6e3a1;
-}
-.__glance_field_value__.__glance_val_changed__ {
-  color: #fab387;
-  background: rgba(250, 179, 135, 0.1);
-}
-
-/* ─── Icon button row (alignment, position, etc.) ────────────────────────── */
-.__glance_icon_row__ {
-  display: flex;
-  gap: 2px;
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 6px;
-  padding: 2px;
-}
-
-.__glance_icon_btn__ {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border: none;
-  background: none;
-  color: #585b70;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.12s;
-  font-size: 11px;
-  padding: 0;
-}
-.__glance_icon_btn__:hover {
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-}
-.__glance_icon_btn__.__glance_icon_active__ {
-  background: rgba(137, 180, 250, 0.12);
-  color: #89b4fa;
-}
-
-/* ─── Classes ───────────────────────────────────────────────────────────── */
-.__glance_classes__ {
-  display: flex;
-  flex-wrap: wrap;
   gap: 4px;
-  padding: 2px 0;
+  align-self: center;
+  min-height: 1.2em;
 }
 
-.__glance_class_pill__ {
-  background: #313244;
-  color: #cba6f7;
-  border: 1px solid rgba(203, 166, 247, 0.15);
-  border-radius: 4px;
-  padding: 2px 7px;
-  font-family: inherit;
-  font-size: 10px;
-  cursor: pointer;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-  line-height: 1.4;
+.__glance_prop_value__:hover {
+  background: rgba(0,0,0,0.04);
 }
 
-.__glance_class_pill__:hover {
-  background: #45475a;
-  border-color: rgba(203, 166, 247, 0.3);
-  color: #d0bfff;
+.__glance_prop_value__.__glance_copied__ {
+  background: rgba(39, 174, 96, 0.1);
+  color: #27ae60;
 }
 
-.__glance_class_pill__.__glance_class_active__ {
-  background: rgba(203, 166, 247, 0.15);
-  border-color: #cba6f7;
-  color: #cba6f7;
+.__glance_prop_value__.__glance_val_changed__ {
+  color: #e67e22;
+  background: rgba(230, 126, 34, 0.08);
 }
 
-.__glance_class_details__ {
-  margin-top: 4px;
+.__glance_prop_value__.__glance_val_changed__:hover {
+  background: rgba(230, 126, 34, 0.14);
 }
 
-.__glance_class_rule__ {
-  padding: 4px 0;
-  border-top: 1px solid rgba(255,255,255,0.04);
+/* ─── Old arrows / chevrons (removed from DOM, kept hidden for safety) ─── */
+.__glance_scrub_arrows__,
+.__glance_scrub_arrow__,
+.__glance_chevron__ {
+  display: none;
 }
 
-.__glance_class_rule__:first-child {
-  border-top: none;
-}
-
-.__glance_class_rule_selector__ {
-  font-size: 9px;
-  color: #89b4fa;
-  padding: 2px 0 3px;
-  word-break: break-all;
-  opacity: 0.7;
-}
-
-.__glance_class_empty__ {
-  font-size: 10px;
-  color: #585b70;
-  padding: 4px 0;
-  font-style: italic;
-}
-
-/* ─── Rows (used in class details) ───────────────────────────────────────── */
-.__glance_row__ {
-  display: flex;
-  align-items: center;
-  padding: 2px 0;
-  gap: 8px;
-  min-height: 22px;
-}
-
-.__glance_key__ {
-  color: #585b70;
-  flex-shrink: 0;
-  width: 52px;
-  font-size: 10px;
-}
-
-.__glance_val__ {
-  color: #fff;
-  font-size: 10.5px;
-  cursor: pointer;
-  padding: 1px 4px;
+/* ─── Color swatch (inline in row) ───────────────────────────────────────── */
+#__glance_panel__ .__glance_color_preview__ {
+  width: 14px;
+  height: 14px;
   border-radius: 3px;
-  transition: background 0.1s, color 0.1s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  word-break: break-all;
-  line-height: 1.4;
-}
-
-.__glance_val__:hover {
-  background: rgba(255,255,255,0.06);
-  color: #fff;
-}
-
-.__glance_val__.__glance_copied__ {
-  background: rgba(166, 227, 161, 0.15);
-  color: #a6e3a1;
-}
-
-.__glance_val__.__glance_val_changed__ {
-  color: #fab387;
-  background: rgba(250, 179, 135, 0.1);
-}
-
-.__glance_val__.__glance_val_changed__:hover {
-  background: rgba(250, 179, 135, 0.18);
-  color: #ffd0a8;
-}
-
-/* ─── Color field ────────────────────────────────────────────────────────── */
-.__glance_color_field__ {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 6px;
-  padding: 5px 8px;
-  min-height: 28px;
-}
-.__glance_color_field__ + .__glance_color_field__ {
-  margin-top: 4px;
-}
-.__glance_color_field__:hover {
-  border-color: rgba(255,255,255,0.12);
-}
-.__glance_color_preview__ {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0,0,0,0.12);
   flex-shrink: 0;
-}
-.__glance_color_hex__ {
-  font-size: 11px;
-  color: #fff;
   cursor: pointer;
-  flex: 1;
+  display: block;
+  align-self: center;
 }
-.__glance_color_opacity__ {
-  font-size: 10px;
-  color: #585b70;
-  flex-shrink: 0;
+
+/* ─── Paired row (two values side-by-side) ───────────────────────────────── */
+.__glance_paired_row__ {
+  display: flex;
+  gap: 16px;
+}
+.__glance_paired_row__ .__glance_prop_row__ {
+  flex: 1;
+  min-width: 0;
+  align-items: center;
 }
 
 /* ─── Inline edit input ─────────────────────────────────────────────────── */
-.__glance_edit_input__ {
-  background: #1e1e2e;
-  border: 1px solid #89b4fa;
-  border-radius: 4px;
-  color: #fff;
-  font-family: inherit;
-  font-size: 11px;
+#__glance_panel__ .__glance_edit_input__ {
+  background: var(--glance-bg-input);
+  border: 1px solid var(--glance-accent);
+  border-radius: 3px;
+  color: var(--glance-text);
+  font-family: var(--glance-font-mono);
+  font-size: 13px;
   padding: 2px 6px;
-  width: 100%;
-  min-width: 60px;
+  width: auto;
+  min-width: 6ch;
+  max-width: 100%;
   outline: none;
-  line-height: 1.4;
-  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
+  line-height: 1.35;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.15);
+  field-sizing: content;
 }
 
-.__glance_edit_input__:focus {
-  border-color: #89b4fa;
+#__glance_panel__ .__glance_edit_input__:focus {
+  border-color: var(--glance-accent);
 }
 
-/* ─── Scrub / enum label cursors ─────────────────────────────────────────── */
-.__glance_field_label__[data-scrub] {
-  cursor: ew-resize;
-  user-select: none;
+@supports not (field-sizing: content) {
+  #__glance_panel__ .__glance_edit_input__ {
+    max-width: min(100%, 32ch);
+  }
 }
-.__glance_field_label__[data-enum] {
-  cursor: pointer;
-  user-select: none;
-}
-.__glance_field_label__.__glance_scrubbing__ {
-  color: #89b4fa;
-}
-.__glance_color_preview__ {
-  cursor: pointer;
-}
+
+/* ─── Scrub / enum label cursors (legacy, no longer needed) ──────────── */
 
 /* ─── Enum dropdown ─────────────────────────────────────────────────────── */
 .__glance_enum_dropdown__ {
   position: absolute;
   top: 100%;
-  left: 0;
   right: 0;
   z-index: 100;
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glance-bg);
+  border: 1px solid var(--glance-border);
   border-radius: 6px;
   margin-top: 2px;
-  max-height: 180px;
+  max-height: 240px;
   overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
   scrollbar-width: thin;
-  scrollbar-color: #313244 transparent;
+  scrollbar-color: #ddd transparent;
+  min-width: 100px;
 }
 .__glance_enum_dropdown__::-webkit-scrollbar { width: 4px; }
 .__glance_enum_dropdown__::-webkit-scrollbar-track { background: transparent; }
-.__glance_enum_dropdown__::-webkit-scrollbar-thumb { background: #313244; border-radius: 4px; }
+.__glance_enum_dropdown__::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
 .__glance_enum_option__ {
   padding: 5px 10px;
-  font-size: 11px;
-  color: #fff;
+  font-size: 13px;
+  color: var(--glance-text);
   cursor: pointer;
   transition: background 0.1s;
 }
 .__glance_enum_option__:hover {
-  background: rgba(137, 180, 250, 0.12);
-  color: #fff;
+  background: rgba(24, 160, 251, 0.08);
 }
 .__glance_enum_option__.__glance_enum_active__ {
-  background: rgba(137, 180, 250, 0.18);
-  color: #89b4fa;
+  background: rgba(24, 160, 251, 0.12);
+  color: var(--glance-accent);
   font-weight: 500;
 }
 
@@ -593,12 +494,12 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   top: 100%;
   left: 0;
   z-index: 100;
-  background: #1e1e2e;
-  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--glance-bg);
+  border: 1px solid var(--glance-border);
   border-radius: 8px;
   margin-top: 4px;
   padding: 8px;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.15);
   width: 236px;
 }
 
@@ -637,148 +538,163 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.12);
+  border: 1px solid rgba(0,0,0,0.12);
   flex-shrink: 0;
 }
 
 .__glance_cp_hex_input__ {
-  background: #1e1e1e;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--glance-bg-input);
+  border: 1px solid var(--glance-border);
   border-radius: 4px;
-  color: #fff;
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 11px;
+  color: var(--glance-text);
+  font-family: var(--glance-font-mono);
+  font-size: 12px;
   padding: 4px 8px;
   flex: 1;
   outline: none;
   min-width: 0;
 }
 .__glance_cp_hex_input__:focus {
-  border-color: #89b4fa;
-  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.2);
+  border-color: var(--glance-accent);
+  box-shadow: 0 0 0 2px rgba(24, 160, 251, 0.15);
 }
 
-/* ─── Color swatch ───────────────────────────────────────────────────────── */
+/* ─── Color swatch (tiny inline) ─────────────────────────────────────────── */
 .__glance_swatch__ {
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 2px;
-  border: 1px solid rgba(255,255,255,0.15);
+  border: 1px solid rgba(0,0,0,0.12);
   flex-shrink: 0;
 }
 
-/* ─── Box model ──────────────────────────────────────────────────────────── */
-.__glance_box_model__ {
-  margin: 4px 0;
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
-  font-size: 10px;
+/* ─── Classes ───────────────────────────────────────────────────────────── */
+.__glance_classes__ {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 0;
 }
 
-.__glance_bm_zone__ {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  border: 1px dashed;
+.__glance_class_pill__ {
+  background: #f0f0f0;
+  color: #555;
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
+  padding: 2px 7px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  line-height: 1.4;
 }
 
-.__glance_bm_margin__ {
-  background: rgba(243, 139, 168, 0.05);
-  border-color: rgba(243, 139, 168, 0.3);
-  padding: 2px;
+.__glance_class_pill__:hover {
+  background: #e5e5e5;
+  border-color: #ccc;
+  color: #333;
 }
 
-.__glance_bm_border_zone__ {
-  background: rgba(250, 179, 135, 0.05);
-  border-color: rgba(250, 179, 135, 0.3);
-  width: 100%;
-  padding: 2px;
+.__glance_class_pill__.__glance_class_active__ {
+  background: rgba(24, 160, 251, 0.1);
+  border-color: #18a0fb;
+  color: #18a0fb;
 }
 
-.__glance_bm_padding_zone__ {
-  background: rgba(166, 227, 161, 0.05);
-  border-color: rgba(166, 227, 161, 0.3);
-  width: 100%;
-  padding: 2px;
+.__glance_class_details__ {
+  margin-top: 4px;
 }
 
-.__glance_bm_zone_label__ {
-  position: absolute;
-  top: 0;
-  left: 3px;
-  font-size: 7.5px;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  line-height: 1;
-  padding: 0;
-  border-radius: 0;
-  background: none;
+.__glance_class_rule__ {
+  padding: 4px 0;
+  border-top: 1px solid #f0f0f0;
 }
-.__glance_bm_margin_label__ { color: #f38ba8; }
-.__glance_bm_border_label__ { color: #fab387; }
-.__glance_bm_padding_label__ { color: #a6e3a1; }
 
-.__glance_bm_mid__ {
+.__glance_class_rule__:first-child {
+  border-top: none;
+}
+
+.__glance_class_rule_selector__ {
+  font-size: 10px;
+  font-family: var(--glance-font-mono);
+  color: var(--glance-accent);
+  padding: 2px 0 3px;
+  word-break: break-all;
+  opacity: 0.7;
+}
+
+.__glance_class_empty__ {
+  font-size: 12px;
+  color: #bbb;
+  padding: 4px 0;
+  font-style: italic;
+}
+
+/* ─── Rows (used in class details) ───────────────────────────────────────── */
+.__glance_row__ {
   display: flex;
   align-items: center;
-  width: 100%;
+  padding: 2px 0;
+  gap: 8px;
+  min-height: 22px;
 }
 
-.__glance_bm_val__ {
-  color: #fff;
-  text-align: center;
-  cursor: pointer;
-  border-radius: 2px;
-  transition: background 0.1s, color 0.1s;
-  width: 28px;
-  min-width: 28px;
-  max-width: 28px;
-  line-height: 1.3;
+.__glance_key__ {
+  color: var(--glance-text-muted);
   flex-shrink: 0;
-  box-sizing: border-box;
-  overflow: hidden;
-}
-.__glance_bm_val__:hover {
-  background: rgba(137, 180, 250, 0.15);
-  color: #89b4fa;
+  width: 52px;
+  font-size: 12px;
 }
 
-.__glance_bm_content__ {
-  background: rgba(137, 180, 250, 0.06);
-  border: 1px solid rgba(137, 180, 250, 0.12);
+.__glance_val__ {
+  font-family: var(--glance-font-mono);
+  color: var(--glance-text);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 1px 4px;
   border-radius: 3px;
-  color: #89b4fa;
-  font-size: 10px;
-  padding: 5px 4px;
-  text-align: center;
-  white-space: nowrap;
-  flex: 1;
-  min-width: 0;
+  transition: background 0.1s, color 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  word-break: break-all;
+  line-height: 1.4;
 }
 
-.__glance_bm_val__ .__glance_edit_input__ {
-  width: 100%;
-  text-align: center;
-  font-size: inherit;
-  font-family: inherit;
-  padding: 0;
-  margin: 0;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  color: #89b4fa;
-  outline: none;
-  line-height: inherit;
+.__glance_val__:hover {
+  background: rgba(0,0,0,0.04);
 }
 
-/* ─── Device Toggle Button ──────────────────────────────────────────────── */
+.__glance_val__.__glance_copied__ {
+  background: rgba(39, 174, 96, 0.1);
+  color: #27ae60;
+}
+
+.__glance_val__.__glance_val_changed__ {
+  color: #e67e22;
+  background: rgba(230, 126, 34, 0.08);
+}
+
+.__glance_val__.__glance_val_changed__:hover {
+  background: rgba(230, 126, 34, 0.14);
+  color: #d35400;
+}
+
+/* ─── DOM tree (kept for class pill expanded details) ────────────────────── */
+.__glance_dom_tree__ {
+  display: none;
+}
+.__glance_dom_tree_current__ {
+  display: none;
+}
+
+/* ─── Icon toggle buttons ────────────────────────────────────────────────── */
 .__glance_icon_toggle__ {
   background: none;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid #e0e0e0;
   border-radius: 4px;
-  color: #585b70;
+  color: #999;
   cursor: pointer;
   padding: 2px 5px;
   line-height: 0;
@@ -788,14 +704,14 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   justify-content: center;
 }
 .__glance_icon_toggle__:hover {
-  color: #fff;
-  border-color: rgba(255,255,255,0.15);
+  color: #555;
+  border-color: #ccc;
 }
 .__glance_icon_toggle__.__glance_device_active__,
 .__glance_icon_toggle__.__glance_hover_active__ {
-  color: #89b4fa;
-  border-color: rgba(137, 180, 250, 0.4);
-  background: rgba(137, 180, 250, 0.1);
+  color: #18a0fb;
+  border-color: rgba(24, 160, 251, 0.4);
+  background: rgba(24, 160, 251, 0.06);
 }
 
 /* ─── Device Frame ──────────────────────────────────────────────────────── */
@@ -837,7 +753,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
 
 /* ─── Device Mode Background ────────────────────────────────────────────── */
 html.__glance_device_mode__ {
-  background: #0a0a14 !important;
+  background: #f5f5f5 !important;
 }
 html.__glance_device_mode__ body {
   visibility: hidden !important;
@@ -858,18 +774,19 @@ html.__glance_sidebar_active__ {
 
 /* ─── Toast ──────────────────────────────────────────────────────────────── */
 #__glance_toast__ {
+  --glance-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
   position: fixed;
   bottom: 24px;
   left: 50%;
   transform: translateX(-50%) translateY(12px);
-  background: #1e1e2e;
+  background: #1a1a1a;
   color: #fff;
-  font-family: 'JetBrains Mono', 'SF Mono', monospace;
-  font-size: 11px;
+  font-family: var(--glance-font-sans);
+  font-size: 12px;
   padding: 8px 16px;
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   z-index: 2147483647;
   opacity: 0;
   transition: opacity 0.3s, transform 0.3s;
@@ -879,4 +796,19 @@ html.__glance_sidebar_active__ {
 #__glance_toast__.__glance_toast_show__ {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+/* ─── Pencil icon removed (color clicks open picker directly) ────────── */
+.__glance_edit_icon__ {
+  display: none;
+}
+
+/* Backward compat: hide old field/box-model grid containers if still rendered */
+.__glance_field_grid__,
+.__glance_field__,
+.__glance_box_model__,
+.__glance_color_field__,
+.__glance_bm_zone__,
+.__glance_icon_row__ {
+  display: none;
 }
