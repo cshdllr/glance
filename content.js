@@ -21,9 +21,10 @@
     if (savedW >= 200 && savedW <= 600) sidebarWidth = savedW;
   } catch {}
 
-  let darkMode = false;
+  let themeMode = "system";
   try {
-    darkMode = localStorage.getItem("__glance_dark__") === "1";
+    const saved = localStorage.getItem("__glance_theme__");
+    if (saved === "light" || saved === "dark") themeMode = saved;
   } catch {}
 
   // ─── Device Preview ──────────────────────────────────────────────────────
@@ -54,29 +55,72 @@
   };
 
   let localFontsLoaded = false;
-  async function loadLocalFonts() {
+  function loadLocalFonts() {
     if (localFontsLoaded) return;
     localFontsLoaded = true;
-    try {
-      if (window.queryLocalFonts) {
-        const fonts = await window.queryLocalFonts();
-        const families = [...new Set(fonts.map(f => f.family))].sort((a, b) =>
-          a.localeCompare(b, undefined, { sensitivity: "base" })
-        );
-        if (families.length > 0) ENUM_PROPS["font-family"] = families;
+
+    const COMMON_FONTS = [
+      "Arial", "Arial Black", "Arial Narrow", "Arial Rounded MT Bold",
+      "Avenir", "Avenir Next", "Baskerville", "Big Caslon",
+      "Bodoni 72", "Book Antiqua", "Bookman Old Style",
+      "Bradley Hand", "Brush Script MT",
+      "Calibri", "Cambria", "Candara", "Century Gothic", "Century Schoolbook",
+      "Chalkboard", "Chalkboard SE", "Charter", "Cochin", "Comic Sans MS",
+      "Consolas", "Constantia", "Copperplate", "Corbel", "Courier", "Courier New",
+      "DIN Alternate", "DIN Condensed", "Damascus",
+      "DejaVu Sans", "DejaVu Sans Mono", "DejaVu Serif", "Didot",
+      "Franklin Gothic Medium", "Futura",
+      "Garamond", "Geneva", "Georgia", "Gill Sans", "Goudy Old Style",
+      "Helvetica", "Helvetica Neue", "Herculanum", "Hoefler Text",
+      "Impact", "Inter",
+      "JetBrains Mono",
+      "Kefa", "Kohinoor Devanagari",
+      "Lucida Console", "Lucida Grande", "Lucida Sans Unicode", "Luminari",
+      "Marker Felt", "Menlo", "Microsoft Sans Serif", "Monaco", "Monospace",
+      "Noteworthy", "Noto Sans", "Noto Serif",
+      "Optima", "Osaka",
+      "PT Mono", "PT Sans", "PT Serif", "Palatino", "Palatino Linotype", "Papyrus",
+      "Phosphate", "Plantagenet Cherokee",
+      "Roboto", "Roboto Mono", "Rockwell",
+      "SF Mono", "SF Pro", "SF Pro Display", "SF Pro Rounded", "SF Pro Text",
+      "Savoye LET", "Segoe UI", "SignPainter", "Skia", "Snell Roundhand",
+      "Tahoma", "Times", "Times New Roman", "Trebuchet MS",
+      "Ubuntu", "Ubuntu Mono",
+      "Verdana",
+      "Zapfino",
+      "system-ui", "sans-serif", "serif", "monospace", "cursive", "fantasy"
+    ];
+
+    const detected = new Set();
+    document.fonts.forEach(f => detected.add(f.family.replace(/['"]/g, "")));
+
+    const testStr = "mmmmmmmmmmlli";
+    const span = document.createElement("span");
+    span.style.cssText = "position:absolute;left:-9999px;top:-9999px;font-size:72px;visibility:hidden;";
+    document.body.appendChild(span);
+
+    const baselines = {};
+    ["monospace", "sans-serif", "serif"].forEach(base => {
+      span.style.fontFamily = base;
+      baselines[base] = span.offsetWidth;
+    });
+
+    COMMON_FONTS.forEach(font => {
+      if (detected.has(font)) return;
+      for (const base of ["monospace", "sans-serif", "serif"]) {
+        span.textContent = testStr;
+        span.style.fontFamily = `"${font}", ${base}`;
+        if (span.offsetWidth !== baselines[base]) {
+          detected.add(font);
+          break;
+        }
       }
-    } catch {}
-    if (!ENUM_PROPS["font-family"]) {
-      const seen = new Set();
-      document.fonts.forEach(f => seen.add(f.family.replace(/['"]/g, "")));
-      const fallbacks = ["Arial", "Helvetica", "Georgia", "Times New Roman",
-        "Courier New", "Verdana", "Trebuchet MS", "Impact", "Comic Sans MS",
-        "system-ui", "sans-serif", "serif", "monospace"];
-      fallbacks.forEach(f => seen.add(f));
-      ENUM_PROPS["font-family"] = [...seen].sort((a, b) =>
-        a.localeCompare(b, undefined, { sensitivity: "base" })
-      );
-    }
+    });
+
+    span.remove();
+    ENUM_PROPS["font-family"] = [...detected].sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" })
+    );
   }
 
   window.__glanceToggle = function() {
@@ -105,6 +149,9 @@
     }
     escListener = (e) => { if (e.key === "Escape") deactivate(); };
     document.addEventListener("keydown", escListener, true);
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onSystemThemeChange);
+    }
     document.body.style.cursor = "crosshair";
     showToast("Glance active — hover to inspect, click to pin");
   }
@@ -124,6 +171,9 @@
     }
     stopHighlightLoop();
     if (escListener) document.removeEventListener("keydown", escListener, true);
+    if (window.matchMedia) {
+      window.matchMedia("(prefers-color-scheme: dark)").removeEventListener("change", onSystemThemeChange);
+    }
     document.body.style.cursor = "";
     document.documentElement.classList.remove("__glance_sidebar_active__");
     if (highlightBox) { highlightBox.remove(); highlightBox = null; }
@@ -244,19 +294,8 @@
 
   let lastMouseX = 0, lastMouseY = 0;
 
-  let highlightRafId = null;
-  function startHighlightLoop() {
-    if (highlightRafId) return;
-    function tick() {
-      if (!inspectorActive) { highlightRafId = null; return; }
-      if (pinnedElement) positionHighlight(pinnedElement);
-      highlightRafId = requestAnimationFrame(tick);
-    }
-    highlightRafId = requestAnimationFrame(tick);
-  }
-  function stopHighlightLoop() {
-    if (highlightRafId) { cancelAnimationFrame(highlightRafId); highlightRafId = null; }
-  }
+  function startHighlightLoop() {}
+  function stopHighlightLoop() {}
 
   function onScroll() {
     if (pinnedElement) positionHighlight(pinnedElement);
@@ -295,19 +334,7 @@
               <line x1="12" y1="18" x2="12" y2="18"/>
             </svg>
           </button>
-          <button class="__glance_icon_toggle__" id="__glance_theme_toggle__" title="Toggle light/dark mode">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="5"/>
-              <line x1="12" y1="1" x2="12" y2="3"/>
-              <line x1="12" y1="21" x2="12" y2="23"/>
-              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-              <line x1="1" y1="12" x2="3" y2="12"/>
-              <line x1="21" y1="12" x2="23" y2="12"/>
-              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-            </svg>
-          </button>
+          <button class="__glance_icon_toggle__" id="__glance_theme_toggle__" title="Theme: system"></button>
         </div>
         <div class="__glance_header_right__">
           <button class="__glance_copy_changes__" id="__glance_copy_changes__" title="Copy all changes as CSS">Copy Changes</button>
@@ -407,25 +434,35 @@
         ${propRow("Radius", cs.borderRadius === "0px" ? "0" : cs.borderRadius, "border-radius", "numeric")}
       `)}
 
-      ${section("CSS Class", `
-        ${propRow("Class", tag, null, "enum", "self")}
-        ${hasParent ? propRow("Parent", parentTag, null, "enum", "parent") : ""}
-        ${children.length ? propRow("Children", childTag, null, "enum", "child") : ""}
+      ${section("Element", (() => {
+        const parentLabel = hasParent ? elementLabel(el.parentElement) : "";
+        const selfLabel = elementLabel(el);
+        const childEls = children.slice(0, 8);
+        return `
+        <div class="__glance_dom_nav__">
+          ${hasParent ? `<div class="__glance_dom_item__ __glance_dom_parent__" data-nav="parent">${parentLabel}</div>` : ""}
+          <div class="__glance_dom_item__ __glance_dom_current__">${selfLabel}</div>
+          ${childEls.map((c, i) =>
+            `<div class="__glance_dom_item__ __glance_dom_child__" data-nav="child" data-child-idx="${i}">${elementLabel(c)}</div>`
+          ).join("")}
+          ${children.length > 8 ? `<div class="__glance_dom_item__ __glance_dom_child__ __glance_dom_more__">… ${children.length - 8} more</div>` : ""}
+        </div>
         ${classList.length ? `
-          <div class="__glance_classes__" style="margin-top:8px">
+          <div class="__glance_classes__">
             ${classList.map(c => `
               <button class="__glance_class_pill__" data-classname="${c}">.${c}</button>
             `).join("")}
           </div>
           <div class="__glance_class_details__" id="__glance_class_details__"></div>
         ` : ""}
-      `)}
+        `;
+      })())}
     `;
 
     attachPropRowHandlers(body, el);
     attachRowCopyHandlers(body);
     attachClassPillHandlers(body, el);
-    attachDomNavFromRows(body, el, children, hasParent);
+    attachDomNavHandlers(body, el, children, hasParent);
     updateCopyChangesButton();
   }
 
@@ -497,32 +534,31 @@
     });
   }
 
-  function attachDomNavFromRows(container, el, children, hasParent) {
-    container.querySelectorAll(".__glance_prop_row__[data-nav]").forEach(row => {
-      const nav = row.dataset.nav;
-      const chevron = row.querySelector(".__glance_chevron__");
-      const valEl = row.querySelector(".__glance_prop_value__");
-      if (nav === "parent" && hasParent) {
-        const handler = (e) => { e.stopPropagation(); selectElement(el.parentElement); };
-        if (chevron) chevron.addEventListener("click", handler);
-        if (valEl) valEl.addEventListener("click", handler);
-      } else if (nav === "child" && children.length) {
-        const handler = (e) => { e.stopPropagation(); selectElement(children[0]); };
-        if (chevron) chevron.addEventListener("click", handler);
-        if (valEl) valEl.addEventListener("click", handler);
-      } else if (nav === "self") {
-        if (valEl) {
-          valEl.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const text = valEl.dataset.copy || valEl.textContent.trim();
-            if (!text) return;
-            navigator.clipboard.writeText(text).catch(() => {});
-            valEl.classList.add("__glance_copied__");
-            setTimeout(() => valEl.classList.remove("__glance_copied__"), 800);
-          });
+  function attachDomNavHandlers(container, el, children, hasParent) {
+    container.querySelectorAll(".__glance_dom_item__[data-nav]").forEach(item => {
+      const nav = item.dataset.nav;
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (nav === "parent" && hasParent) {
+          selectElement(el.parentElement);
+        } else if (nav === "child") {
+          const idx = parseInt(item.dataset.childIdx || "0", 10);
+          if (children[idx]) selectElement(children[idx]);
         }
-      }
+      });
     });
+
+    const currentItem = container.querySelector(".__glance_dom_current__");
+    if (currentItem) {
+      currentItem.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const text = currentItem.textContent.trim();
+        if (!text) return;
+        navigator.clipboard.writeText(text).catch(() => {});
+        currentItem.classList.add("__glance_copied__");
+        setTimeout(() => currentItem.classList.remove("__glance_copied__"), 800);
+      });
+    }
   }
 
   const DRAG_THRESHOLD = 3;
@@ -1187,22 +1223,38 @@
   }
 
   // ─── Theme Toggle ──────────────────────────────────────────────────────────
+  const ICON_SUN = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+  const ICON_MOON = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
+  const ICON_SYSTEM = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`;
+
+  function resolvedDark() {
+    if (themeMode === "dark") return true;
+    if (themeMode === "light") return false;
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+  }
+
   function applyTheme() {
     if (!panel) return;
-    panel.classList.toggle("__glance_dark__", darkMode);
+    const isDark = resolvedDark();
+    panel.classList.toggle("__glance_dark__", isDark);
     const btn = panel.querySelector("#__glance_theme_toggle__");
     if (btn) {
-      btn.classList.toggle("__glance_theme_dark_active__", darkMode);
-      btn.innerHTML = darkMode
-        ? `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
-        : `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`;
+      if (themeMode === "system") { btn.innerHTML = ICON_SYSTEM; btn.title = "Theme: system"; }
+      else if (themeMode === "light") { btn.innerHTML = ICON_SUN; btn.title = "Theme: light"; }
+      else { btn.innerHTML = ICON_MOON; btn.title = "Theme: dark"; }
     }
   }
 
   function toggleTheme() {
-    darkMode = !darkMode;
-    try { localStorage.setItem("__glance_dark__", darkMode ? "1" : "0"); } catch {}
+    if (themeMode === "system") themeMode = "light";
+    else if (themeMode === "light") themeMode = "dark";
+    else themeMode = "system";
+    try { localStorage.setItem("__glance_theme__", themeMode); } catch {}
     applyTheme();
+  }
+
+  function onSystemThemeChange() {
+    if (themeMode === "system") applyTheme();
   }
 
   // ─── Hover Inspection Toggle ────────────────────────────────────────────────
@@ -1300,7 +1352,7 @@
 
   function initIframeInspection(idoc) {
     iframeHighlight = idoc.createElement("div");
-    iframeHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;" +
+    iframeHighlight.style.cssText = "position:absolute;pointer-events:none;z-index:2147483646;" +
       "outline:1px dashed #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.04);" +
       "border-radius:2px;transition:outline 0.08s ease,background 0.08s ease;display:none;";
     const iframeLabel = idoc.createElement("span");
@@ -1328,6 +1380,10 @@
       renderPanel(el);
     }
 
+    function onIframeScroll() {
+      if (iframePinnedElement) positionIframeHighlight(iframePinnedElement, idoc);
+    }
+
     function onIframeClick(e) {
       if (!hoverEnabled) return;
       const el = idoc.elementFromPoint(e.clientX, e.clientY);
@@ -1353,11 +1409,13 @@
 
     idoc.addEventListener("mousemove", onIframeMove, true);
     idoc.addEventListener("click", onIframeClick, true);
+    (idoc.defaultView || window).addEventListener("scroll", onIframeScroll, true);
 
     iframeCleanup = () => {
       try {
         idoc.removeEventListener("mousemove", onIframeMove, true);
         idoc.removeEventListener("click", onIframeClick, true);
+        (idoc.defaultView || window).removeEventListener("scroll", onIframeScroll, true);
         if (iframeHighlight && iframeHighlight.parentNode) iframeHighlight.remove();
       } catch {}
     };
@@ -1367,9 +1425,12 @@
     if (!iframeHighlight) return;
     try {
       const r = el.getBoundingClientRect();
+      const iwin = idoc.defaultView || window;
+      const sx = iwin.pageXOffset || idoc.documentElement.scrollLeft || 0;
+      const sy = iwin.pageYOffset || idoc.documentElement.scrollTop || 0;
       iframeHighlight.style.display = "block";
-      iframeHighlight.style.left = r.left + "px";
-      iframeHighlight.style.top = r.top + "px";
+      iframeHighlight.style.left = (r.left + sx) + "px";
+      iframeHighlight.style.top = (r.top + sy) + "px";
       iframeHighlight.style.width = r.width + "px";
       iframeHighlight.style.height = r.height + "px";
     } catch {}

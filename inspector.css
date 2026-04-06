@@ -5,7 +5,7 @@
   --glance-font-mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
 }
 
-/* ─── Highlight overlay (fixed = tracks scroll in any container + mobile) ─ */
+/* ─── Highlight overlay ───────────────────────────────────────────────────── */
 #__glance_highlight__ {
   position: fixed;
   pointer-events: none;
@@ -574,7 +574,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
-  padding: 2px 0;
+  padding: 4px 0 2px;
 }
 
 .__glance_class_pill__ {
@@ -681,13 +681,79 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   color: #d35400;
 }
 
-/* ─── DOM tree (kept for class pill expanded details) ────────────────────── */
-.__glance_dom_tree__ {
-  display: none;
+/* ─── DOM navigator tree ──────────────────────────────────────────────────── */
+.__glance_dom_nav__ {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 10px;
 }
-.__glance_dom_tree_current__ {
-  display: none;
+
+.__glance_dom_item__ {
+  font-family: var(--glance-font-mono);
+  font-size: 12px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.__glance_dom_parent__ {
+  color: var(--glance-text-muted);
+  padding-left: 0;
+}
+.__glance_dom_parent__:hover {
+  background: rgba(0,0,0,0.03);
+  color: var(--glance-text);
+}
+
+.__glance_dom_current__ {
+  color: var(--glance-text);
+  font-weight: 600;
+  padding-left: 12px;
+  border: 1px solid var(--glance-accent);
+  background: rgba(24, 160, 251, 0.04);
+}
+.__glance_dom_current__.__glance_copied__ {
+  background: rgba(39, 174, 96, 0.08);
+  border-color: #27ae60;
+  color: #27ae60;
+}
+
+.__glance_dom_child__ {
+  color: var(--glance-text-muted);
+  padding-left: 24px;
+}
+.__glance_dom_child__:hover {
+  background: rgba(0,0,0,0.03);
+  color: var(--glance-text);
+}
+
+.__glance_dom_more__ {
+  color: var(--glance-text-subtle);
+  font-style: italic;
+  cursor: default;
+}
+.__glance_dom_more__:hover {
+  background: none;
+  color: var(--glance-text-subtle);
+}
+
+/* Dark mode overrides for DOM nav */
+#__glance_panel__.__glance_dark__ .__glance_dom_parent__:hover,
+#__glance_panel__.__glance_dark__ .__glance_dom_child__:hover {
+  background: rgba(255,255,255,0.04);
+}
+#__glance_panel__.__glance_dark__ .__glance_dom_current__ {
+  background: rgba(24, 160, 251, 0.08);
+}
+
+/* Legacy */
+.__glance_dom_tree__ { display: none; }
+.__glance_dom_tree_current__ { display: none; }
 
 /* ─── Icon toggle buttons ────────────────────────────────────────────────── */
 .__glance_icon_toggle__ {
