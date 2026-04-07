@@ -140,6 +140,7 @@
     createHighlightBox();
     createPanel();
     document.addEventListener("mousemove", onMouseMove, true);
+    document.addEventListener("mouseleave", onMouseLeave);
     document.addEventListener("click", onClick, true);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onScroll);
@@ -162,6 +163,7 @@
     pinnedElement = null;
     hoveredElement = null;
     document.removeEventListener("mousemove", onMouseMove, true);
+    document.removeEventListener("mouseleave", onMouseLeave);
     document.removeEventListener("click", onClick, true);
     window.removeEventListener("scroll", onScroll, true);
     window.removeEventListener("resize", onScroll);
@@ -251,13 +253,23 @@
       || el.closest("#__glance_device_frame__");
   }
 
+  function onMouseLeave() {
+    hideHoverHighlight();
+    if (!pinnedElement && highlightBox) {
+      highlightBox.style.display = "none";
+    }
+  }
+
   function onMouseMove(e) {
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (isGlanceUI(el)) return;
+    if (isGlanceUI(el)) {
+      hideHoverHighlight();
+      return;
+    }
 
     if (pinnedElement) {
       positionHoverHighlight(el);
