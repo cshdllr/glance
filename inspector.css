@@ -836,6 +836,10 @@ html.__glance_device_mode__ #__glance_highlight__ {
 /* ─── Sidebar page push ────────────────────────────────────────────────── */
 html.__glance_sidebar_active__ {
   margin-right: var(--__glance-sidebar-w, 280px) !important;
+  overflow-x: hidden !important;
+}
+html.__glance_sidebar_active__ body {
+  overflow-x: hidden !important;
 }
 
 /* ─── Toast ──────────────────────────────────────────────────────────────── */

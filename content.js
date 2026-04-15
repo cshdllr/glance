@@ -53,6 +53,8 @@
   const RANGE_PROPS = {
     "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
   };
+  // CSS properties whose numeric values are unitless (no "px" suffix needed)
+  const UNITLESS_PROPS = new Set(["opacity", "z-index", "line-height", "flex-grow", "flex-shrink", "flex", "order", "column-count", "font-weight"]);
 
   let localFontsLoaded = false;
   function loadLocalFonts() {
@@ -154,6 +156,7 @@
       window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", onSystemThemeChange);
     }
     document.body.style.cursor = "crosshair";
+    pushSidebar();
     showToast("Glance active — hover to inspect, click to pin");
   }
 
@@ -178,6 +181,8 @@
     }
     document.body.style.cursor = "";
     document.documentElement.classList.remove("__glance_sidebar_active__");
+    document.documentElement.style.removeProperty("--__glance-sidebar-w");
+    revertSidebarPush();
     if (highlightBox) { highlightBox.remove(); highlightBox = null; }
     if (hoverHighlight) { hoverHighlight.remove(); hoverHighlight = null; }
     if (panel) { panel.remove(); panel = null; }
@@ -419,26 +424,26 @@
         <div class="__glance_spacing_group__" data-shorthand="margin" data-top="${stripPx(cs.marginTop)}" data-right="${stripPx(cs.marginRight)}" data-bottom="${stripPx(cs.marginBottom)}" data-left="${stripPx(cs.marginLeft)}">
           <div class="__glance_subsection_label__">margin</div>
           <div class="__glance_paired_row__">
-            ${propRow("Top", stripPx(cs.marginTop), "margin-top", "numeric")}
-            ${propRow("Bottom", stripPx(cs.marginBottom), "margin-bottom", "numeric")}
+            ${propRow("Top", cs.marginTop, "margin-top", "numeric")}
+            ${propRow("Bottom", cs.marginBottom, "margin-bottom", "numeric")}
           </div>
           <div class="__glance_paired_row__">
-            ${propRow("Left", stripPx(cs.marginLeft), "margin-left", "numeric")}
-            ${propRow("Right", stripPx(cs.marginRight), "margin-right", "numeric")}
+            ${propRow("Left", cs.marginLeft, "margin-left", "numeric")}
+            ${propRow("Right", cs.marginRight, "margin-right", "numeric")}
           </div>
         </div>
         <div class="__glance_spacing_group__" data-shorthand="padding" data-top="${stripPx(cs.paddingTop)}" data-right="${stripPx(cs.paddingRight)}" data-bottom="${stripPx(cs.paddingBottom)}" data-left="${stripPx(cs.paddingLeft)}">
           <div class="__glance_subsection_label__">padding</div>
           <div class="__glance_paired_row__">
-            ${propRow("Top", stripPx(cs.paddingTop), "padding-top", "numeric")}
-            ${propRow("Bottom", stripPx(cs.paddingBottom), "padding-bottom", "numeric")}
+            ${propRow("Top", cs.paddingTop, "padding-top", "numeric")}
+            ${propRow("Bottom", cs.paddingBottom, "padding-bottom", "numeric")}
           </div>
           <div class="__glance_paired_row__">
-            ${propRow("Left", stripPx(cs.paddingLeft), "padding-left", "numeric")}
-            ${propRow("Right", stripPx(cs.paddingRight), "padding-right", "numeric")}
+            ${propRow("Left", cs.paddingLeft, "padding-left", "numeric")}
+            ${propRow("Right", cs.paddingRight, "padding-right", "numeric")}
           </div>
         </div>
-        ${propRow("Border", stripPx(cs.borderTopWidth), "border-top-width", "numeric")}
+        ${propRow("Border", cs.borderTopWidth, "border-top-width", "numeric")}
       `)}
 
       ${section("Appearance", `
@@ -479,11 +484,23 @@
   }
 
   function selectElement(el) {
-    pinnedElement = el;
-    startHighlightLoop();
-    positionHighlight(el);
+    const isIframeEl = el.ownerDocument !== document;
+    if (isIframeEl) {
+      iframePinnedElement = el;
+      const idoc = el.ownerDocument;
+      positionIframeHighlight(el, idoc);
+      if (iframeHighlight) {
+        iframeHighlight.style.outline = "2px solid #18a0fb";
+        iframeHighlight.style.background = "rgba(24,160,251,0.06)";
+      }
+      idoc.body.style.cursor = "default";
+    } else {
+      pinnedElement = el;
+      startHighlightLoop();
+      positionHighlight(el);
+      document.body.style.cursor = "default";
+    }
     renderPanel(el);
-    document.body.style.cursor = "default";
   }
 
   function showRowCopied(el) {
@@ -608,7 +625,7 @@
           const raw = valEl.dataset.copy || valEl.textContent.trim();
           const match = raw.match(/^(-?[\d.]+)(.*)$/);
           const startNum = match ? parseFloat(match[1]) : NaN;
-          const unit = match ? (match[2] || "") : "";
+          const unit = match ? (match[2] || (UNITLESS_PROPS.has(cssProp) ? "" : "px")) : "";
           const rangeDef = RANGE_PROPS[cssProp];
 
           const onMove = (ev) => {
@@ -1070,7 +1087,7 @@
       if (!match) return false;
       const num = parseFloat(match[1]);
       if (isNaN(num)) return false;
-      const unit = match[2] || "";
+      const unit = match[2] || (UNITLESS_PROPS.has(cssProp) ? "" : "px");
       const newNum = Math.round((num + direction * amount) * 100) / 100;
       input.value = newNum + unit;
       applyChange(targetEl, cssProp, val, input.value);
@@ -1228,10 +1245,71 @@
     return results;
   }
 
+  let pushStyleEl = null;
+  const pushedEls = new Set();
+
   function applySidebarWidth(w) {
     sidebarWidth = Math.max(200, Math.min(600, w));
     if (panel) panel.style.width = sidebarWidth + "px";
     document.documentElement.style.setProperty("--__glance-sidebar-w", sidebarWidth + "px");
+    if (inspectorActive && !devicePreviewActive) pushSidebar();
+  }
+
+  function pushSidebar() {
+    revertSidebarPush();
+    const sw = sidebarWidth;
+    const shrinkW = `calc(100vw - ${sw}px)`;
+
+    const htmlCs = window.getComputedStyle(document.documentElement);
+    const bodyCs = window.getComputedStyle(document.body);
+    const htmlFixed = htmlCs.position === "fixed";
+    const bodyFixed = bodyCs.position === "fixed";
+
+    if (htmlFixed || bodyFixed) {
+      if (!pushStyleEl) {
+        pushStyleEl = document.createElement("style");
+        pushStyleEl.id = "__glance_push_style__";
+        document.head.appendChild(pushStyleEl);
+      }
+      let css = "";
+      if (htmlFixed) {
+        css += `html.__glance_sidebar_active__ { width: ${shrinkW} !important; right: auto !important; }\n`;
+      }
+      if (bodyFixed) {
+        css += `html.__glance_sidebar_active__ body { width: ${shrinkW} !important; right: auto !important; }\n`;
+      }
+      pushStyleEl.textContent = css;
+    }
+
+    const scanFixed = (parent, depth) => {
+      if (depth > 3) return;
+      for (const el of parent.children) {
+        if (el.id?.startsWith("__glance_")) continue;
+        const cs = window.getComputedStyle(el);
+        if (cs.position === "fixed") {
+          const r = parseFloat(cs.right);
+          const l = parseFloat(cs.left);
+          const elW = parseFloat(cs.width);
+          const vw = window.innerWidth;
+          if ((r === 0 && l === 0) || (Math.abs(elW - vw) < 2)) {
+            el.style.setProperty("width", shrinkW, "important");
+            el.style.setProperty("right", "auto", "important");
+            pushedEls.add(el);
+          }
+        }
+        scanFixed(el, depth + 1);
+      }
+    };
+    scanFixed(document.body, 0);
+  }
+
+  function revertSidebarPush() {
+    if (pushStyleEl) { pushStyleEl.remove(); pushStyleEl = null; }
+    pushedEls.forEach(el => {
+      el.style.removeProperty("width");
+      el.style.removeProperty("right");
+    });
+    pushedEls.clear();
   }
 
   // ─── Theme Toggle ──────────────────────────────────────────────────────────
@@ -1312,6 +1390,7 @@
 
   function enableDevicePreview() {
     devicePreviewActive = true;
+    revertSidebarPush();
 
     const toggleBtn = document.getElementById("__glance_device_toggle__");
     if (toggleBtn) toggleBtn.classList.add("__glance_device_active__");
@@ -1328,6 +1407,7 @@
     if (toggleBtn) toggleBtn.classList.remove("__glance_device_active__");
 
     removeDeviceFrame();
+    pushSidebar();
     showToast("Device preview off");
   }
 
@@ -1364,7 +1444,7 @@
 
   function initIframeInspection(idoc) {
     iframeHighlight = idoc.createElement("div");
-    iframeHighlight.style.cssText = "position:absolute;pointer-events:none;z-index:2147483646;" +
+    iframeHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;" +
       "outline:1px dashed #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.04);" +
       "border-radius:2px;transition:outline 0.08s ease,background 0.08s ease;display:none;";
     const iframeLabel = idoc.createElement("span");
@@ -1374,7 +1454,7 @@
       "overflow:hidden;text-overflow:ellipsis;pointer-events:none;";
     iframeLabel.id = "__glance_iframe_highlight_label__";
     iframeHighlight.appendChild(iframeLabel);
-    idoc.body.appendChild(iframeHighlight);
+    idoc.documentElement.appendChild(iframeHighlight);
     idoc.body.style.cursor = "crosshair";
 
     function updateIframeLabel(el) {
@@ -1437,12 +1517,9 @@
     if (!iframeHighlight) return;
     try {
       const r = el.getBoundingClientRect();
-      const iwin = idoc.defaultView || window;
-      const sx = iwin.pageXOffset || idoc.documentElement.scrollLeft || 0;
-      const sy = iwin.pageYOffset || idoc.documentElement.scrollTop || 0;
       iframeHighlight.style.display = "block";
-      iframeHighlight.style.left = (r.left + sx) + "px";
-      iframeHighlight.style.top = (r.top + sy) + "px";
+      iframeHighlight.style.left = r.left + "px";
+      iframeHighlight.style.top = r.top + "px";
       iframeHighlight.style.width = r.width + "px";
       iframeHighlight.style.height = r.height + "px";
     } catch {}
