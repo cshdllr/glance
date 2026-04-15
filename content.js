@@ -49,6 +49,7 @@
     "overflow-y": ["visible","hidden","scroll","auto","clip"],
     "font-weight": ["100","200","300","400","500","600","700","800","900"],
     "visibility": ["visible","hidden","collapse"],
+    "border-style": ["none","solid","dashed","dotted","double","groove","ridge","inset","outset"],
   };
   const RANGE_PROPS = {
     "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
@@ -397,6 +398,7 @@
         ${propRow("Size", cs.fontSize, "font-size", "numeric")}
         ${propRow("Line", cs.lineHeight, "line-height", "numeric")}
         ${propRow("Weight", cs.fontWeight, "font-weight", "enum")}
+        ${propRow("Spacing", cs.letterSpacing === "normal" ? "0" : cs.letterSpacing, "letter-spacing", "numeric")}
         ${propRowColor("Color", cs.color, "color")}
       `)}
 
@@ -412,7 +414,7 @@
         ${isFlex ? propRow("Wrap", cs.flexWrap, "flex-wrap", "enum") : ""}
         ${isFlex ? propRow("Align", cs.alignItems, "align-items", "enum") : ""}
         ${isFlex ? propRow("Justify", cs.justifyContent, "justify-content", "enum") : ""}
-        ${isFlex && cs.gap !== "normal" && cs.gap !== "0px" ? propRow("Gap", cs.gap, "gap", "numeric") : ""}
+        ${isFlex ? propRow("Gap", cs.gap === "normal" ? "0" : cs.gap, "gap", "numeric") : ""}
         ${parentIsFlex ? propRow("Align Self", cs.alignSelf, "align-self", "enum") : ""}
         ${propRow("Position", cs.position, "position", "enum")}
         ${propRow("Overflow X", cs.overflowX, "overflow-x", "enum")}
@@ -444,9 +446,12 @@
           </div>
         </div>
         ${propRow("Border", cs.borderTopWidth, "border-top-width", "numeric")}
+        ${propRow("Border Style", cs.borderTopStyle, "border-top-style", "enum")}
+        ${propRowColor("Border Color", cs.borderTopColor, "border-top-color")}
       `)}
 
       ${section("Appearance", `
+        ${propRowColor("Background", cs.backgroundColor, "background-color")}
         ${propRow("Opacity", cs.opacity, "opacity", "numeric")}
         ${propRow("Radius", cs.borderRadius === "0px" ? "0" : cs.borderRadius, "border-radius", "numeric")}
       `)}
