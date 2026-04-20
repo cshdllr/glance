@@ -82,6 +82,7 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   flex-direction: column;
   font-family: var(--glance-font-sans);
   font-size: 13px;
+  letter-spacing: normal;
   background: var(--glance-bg);
   overflow: hidden;
   color: var(--glance-text);
@@ -486,6 +487,11 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   background: rgba(24, 160, 251, 0.12);
   color: var(--glance-accent);
   font-weight: 500;
+}
+.__glance_enum_option__.__glance_enum_focused__ {
+  background: rgba(24, 160, 251, 0.18);
+  color: var(--glance-accent);
+  outline: none;
 }
 
 /* ─── Color picker popover ──────────────────────────────────────────────── */

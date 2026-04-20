@@ -50,9 +50,11 @@
     "font-weight": ["100","200","300","400","500","600","700","800","900"],
     "visibility": ["visible","hidden","collapse"],
     "border-style": ["none","solid","dashed","dotted","double","groove","ridge","inset","outset"],
+    "text-wrap": ["wrap","nowrap","balance","pretty","stable"],
   };
   const RANGE_PROPS = {
     "opacity": { min: 0, max: 1, step: 0.01, shiftStep: 0.1 },
+    "letter-spacing": { step: 0.1, shiftStep: 1 },
   };
   // CSS properties whose numeric values are unitless (no "px" suffix needed)
   const UNITLESS_PROPS = new Set(["opacity", "z-index", "line-height", "flex-grow", "flex-shrink", "flex", "order", "column-count", "font-weight"]);
@@ -399,6 +401,7 @@
         ${propRow("Line", cs.lineHeight, "line-height", "numeric")}
         ${propRow("Weight", cs.fontWeight, "font-weight", "enum")}
         ${propRow("Spacing", cs.letterSpacing === "normal" ? "0" : cs.letterSpacing, "letter-spacing", "numeric")}
+        ${propRow("Wrap", cs.textWrap, "text-wrap", "enum")}
         ${propRowColor("Color", cs.color, "color")}
       `)}
 
@@ -644,7 +647,7 @@
             else { step = 1; shiftStep = 10; }
             const mult = ev.shiftKey ? shiftStep : step;
             let newVal = startNum + dx * mult;
-            if (rangeDef) newVal = Math.max(rangeDef.min, Math.min(rangeDef.max, newVal));
+            if (rangeDef && rangeDef.min != null) newVal = Math.max(rangeDef.min, Math.min(rangeDef.max, newVal));
             newVal = Math.round(newVal * 1000) / 1000;
             const newStr = newVal + unit;
             valEl.textContent = newStr;
@@ -727,11 +730,60 @@
   // ─── Enum dropdown ─────────────────────────────────────────────────────────
   let activeDropdown = null;
   let activeDropdownLabel = null;
+  let dropdownTypeahead = "";
+  let dropdownTypeaheadTimer = null;
 
   function dismissDropdown() {
     if (activeDropdown) { activeDropdown.remove(); activeDropdown = null; }
     activeDropdownLabel = null;
+    dropdownTypeahead = "";
+    if (dropdownTypeaheadTimer) { clearTimeout(dropdownTypeaheadTimer); dropdownTypeaheadTimer = null; }
     document.removeEventListener("click", onDropdownOutsideClick, true);
+    document.removeEventListener("keydown", onDropdownKeydown, true);
+  }
+
+  function getDropdownItems() {
+    return activeDropdown ? Array.from(activeDropdown.querySelectorAll(".__glance_enum_option__")) : [];
+  }
+
+  function getDropdownFocused() {
+    return activeDropdown ? activeDropdown.querySelector(".__glance_enum_focused__") : null;
+  }
+
+  function setDropdownFocus(item) {
+    getDropdownItems().forEach(i => i.classList.remove("__glance_enum_focused__"));
+    if (item) {
+      item.classList.add("__glance_enum_focused__");
+      item.scrollIntoView({ block: "nearest" });
+    }
+  }
+
+  function onDropdownKeydown(e) {
+    if (!activeDropdown) return;
+    const items = getDropdownItems();
+    const focused = getDropdownFocused();
+    const idx = focused ? items.indexOf(focused) : -1;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault(); e.stopPropagation();
+      setDropdownFocus(items[idx + 1] || items[0]);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault(); e.stopPropagation();
+      setDropdownFocus(items[idx - 1] || items[items.length - 1]);
+    } else if (e.key === "Enter") {
+      e.preventDefault(); e.stopPropagation();
+      if (focused) focused.click();
+    } else if (e.key === "Escape") {
+      e.preventDefault(); e.stopPropagation();
+      dismissDropdown();
+    } else if (e.key.length === 1 && !e.metaKey && !e.ctrlKey) {
+      e.stopPropagation();
+      dropdownTypeahead += e.key.toLowerCase();
+      if (dropdownTypeaheadTimer) clearTimeout(dropdownTypeaheadTimer);
+      dropdownTypeaheadTimer = setTimeout(() => { dropdownTypeahead = ""; }, 800);
+      const match = items.find(i => i.textContent.toLowerCase().startsWith(dropdownTypeahead));
+      if (match) setDropdownFocus(match);
+    }
   }
 
   function onDropdownOutsideClick(e) {
@@ -775,9 +827,15 @@
     activeDropdownLabel = fieldEl;
 
     const activeItem = dd.querySelector(".__glance_enum_active__");
-    if (activeItem) activeItem.scrollIntoView({ block: "nearest" });
+    if (activeItem) {
+      activeItem.classList.add("__glance_enum_focused__");
+      activeItem.scrollIntoView({ block: "nearest" });
+    }
 
-    setTimeout(() => document.addEventListener("click", onDropdownOutsideClick, true), 0);
+    setTimeout(() => {
+      document.addEventListener("click", onDropdownOutsideClick, true);
+      document.addEventListener("keydown", onDropdownKeydown, true);
+    }, 0);
   }
 
   // ─── Color Picker ──────────────────────────────────────────────────────────
@@ -1076,7 +1134,12 @@
     input.select();
 
     const commit = () => {
-      const newVal = input.value.trim();
+      input.removeEventListener("blur", commit);
+      let newVal = input.value.trim();
+      if (/^-?[\d.]+$/.test(newVal) && !UNITLESS_PROPS.has(cssProp)) {
+        const unitMatch = currentVal.match(/[a-z%]+$/i);
+        newVal += unitMatch ? unitMatch[0] : "px";
+      }
       input.remove();
       if (newVal && newVal !== currentVal) {
         applyChange(targetEl, cssProp, currentVal, newVal);
@@ -1101,7 +1164,7 @@
     }
 
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); commit(); return; }
+      if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); commit(); return; }
       if (e.key === "Escape") { e.preventDefault(); input.remove(); valEl.innerHTML = currentVal; return; }
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         const dir = e.key === "ArrowUp" ? 1 : -1;
