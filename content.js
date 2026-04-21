@@ -23,8 +23,13 @@
 
   let themeMode = "system";
   try {
-    const saved = localStorage.getItem("__glance_theme__");
-    if (saved === "light" || saved === "dark") themeMode = saved;
+    chrome.storage.local.get("__glance_theme__", (result) => {
+      const saved = result["__glance_theme__"];
+      if (saved === "light" || saved === "dark" || saved === "system") {
+        themeMode = saved;
+        applyTheme();
+      }
+    });
   } catch {}
 
   // ─── Device Preview ──────────────────────────────────────────────────────
@@ -135,6 +140,16 @@
   // Also listen for messages from background
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "TOGGLE_INSPECTOR") window.__glanceToggle();
+  });
+
+  // Sync theme changes from other tabs/sites
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area !== "local" || !changes["__glance_theme__"]) return;
+    const val = changes["__glance_theme__"].newValue;
+    if (val === "light" || val === "dark" || val === "system") {
+      themeMode = val;
+      applyTheme();
+    }
   });
 
   // ─── Activate ──────────────────────────────────────────────────────────────
@@ -291,6 +306,7 @@
   function onClick(e) {
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
+    if (isGlanceUI(e.target)) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
     if (isGlanceUI(el)) return;
     e.preventDefault();
@@ -1407,7 +1423,7 @@
     if (themeMode === "system") themeMode = "light";
     else if (themeMode === "light") themeMode = "dark";
     else themeMode = "system";
-    try { localStorage.setItem("__glance_theme__", themeMode); } catch {}
+    try { chrome.storage.local.set({ "__glance_theme__": themeMode }); } catch {}
     applyTheme();
   }
 
@@ -1480,6 +1496,7 @@
   }
 
   let iframeHighlight = null;
+  let iframeHoverHighlight = null;
   let iframePinnedElement = null;
   let iframeCleanup = null;
 
@@ -1523,18 +1540,55 @@
     iframeLabel.id = "__glance_iframe_highlight_label__";
     iframeHighlight.appendChild(iframeLabel);
     idoc.documentElement.appendChild(iframeHighlight);
+
+    iframeHoverHighlight = idoc.createElement("div");
+    iframeHoverHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483645;" +
+      "outline:1px dashed rgba(24,160,251,0.5);outline-offset:-1px;background:rgba(24,160,251,0.02);" +
+      "border-radius:2px;display:none;";
+    const iframeHoverLabel = idoc.createElement("span");
+    iframeHoverLabel.style.cssText = "position:absolute;bottom:100%;left:-1px;background:rgba(24,160,251,0.7);color:#fff;" +
+      "font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;font-size:10px;line-height:1;" +
+      "padding:3px 6px;border-radius:3px 3px 0 0;white-space:nowrap;max-width:200px;" +
+      "overflow:hidden;text-overflow:ellipsis;pointer-events:none;";
+    iframeHoverHighlight.appendChild(iframeHoverLabel);
+    idoc.documentElement.appendChild(iframeHoverHighlight);
+
     idoc.body.style.cursor = "crosshair";
+
+    let lastIframeMouseX = 0, lastIframeMouseY = 0;
 
     function updateIframeLabel(el) {
       const lbl = iframeHighlight.querySelector("#__glance_iframe_highlight_label__");
       if (lbl) lbl.textContent = elementLabel(el);
     }
 
+    function updateIframeHoverHighlight(el) {
+      if (!iframeHoverHighlight) return;
+      const r = el.getBoundingClientRect();
+      iframeHoverHighlight.style.display = "block";
+      iframeHoverHighlight.style.left = r.left + "px";
+      iframeHoverHighlight.style.top = r.top + "px";
+      iframeHoverHighlight.style.width = r.width + "px";
+      iframeHoverHighlight.style.height = r.height + "px";
+      const lbl = iframeHoverHighlight.querySelector("span");
+      if (lbl) lbl.textContent = elementLabel(el);
+    }
+
     function onIframeMove(e) {
+      lastIframeMouseX = e.clientX;
+      lastIframeMouseY = e.clientY;
       if (!hoverEnabled) return;
-      if (iframePinnedElement) return;
       const el = idoc.elementFromPoint(e.clientX, e.clientY);
-      if (!el || el === iframeHighlight) return;
+      if (!el || el === iframeHighlight || el === iframeHoverHighlight) return;
+      if (iframePinnedElement) {
+        if (el === iframePinnedElement) {
+          if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
+          return;
+        }
+        updateIframeHoverHighlight(el);
+        return;
+      }
+      if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
       positionIframeHighlight(el, idoc);
       updateIframeLabel(el);
       renderPanel(el);
@@ -1542,6 +1596,19 @@
 
     function onIframeScroll() {
       if (iframePinnedElement) positionIframeHighlight(iframePinnedElement, idoc);
+      if (!hoverEnabled) return;
+      const el = idoc.elementFromPoint(lastIframeMouseX, lastIframeMouseY);
+      if (!el || el === iframeHighlight || el === iframeHoverHighlight) return;
+      if (iframePinnedElement) {
+        if (el === iframePinnedElement) {
+          if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
+        } else {
+          updateIframeHoverHighlight(el);
+        }
+      } else {
+        positionIframeHighlight(el, idoc);
+        updateIframeLabel(el);
+      }
     }
 
     function onIframeClick(e) {
@@ -1553,11 +1620,13 @@
 
       if (iframePinnedElement === el) {
         iframePinnedElement = null;
+        if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
         idoc.body.style.cursor = hoverEnabled ? "crosshair" : "";
         iframeHighlight.style.outline = "1px dashed #18a0fb";
         iframeHighlight.style.background = "rgba(24,160,251,0.04)";
       } else {
         iframePinnedElement = el;
+        if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
         idoc.body.style.cursor = "default";
         positionIframeHighlight(el, idoc);
         updateIframeLabel(el);
@@ -1577,6 +1646,7 @@
         idoc.removeEventListener("click", onIframeClick, true);
         (idoc.defaultView || window).removeEventListener("scroll", onIframeScroll, true);
         if (iframeHighlight && iframeHighlight.parentNode) iframeHighlight.remove();
+        if (iframeHoverHighlight && iframeHoverHighlight.parentNode) iframeHoverHighlight.remove();
       } catch {}
     };
   }
@@ -1597,6 +1667,7 @@
     if (iframeCleanup) { iframeCleanup(); iframeCleanup = null; }
     if (deviceFrame) { deviceFrame.remove(); deviceFrame = null; }
     iframeHighlight = null;
+    iframeHoverHighlight = null;
     iframePinnedElement = null;
     document.documentElement.classList.remove("__glance_device_mode__");
   }
