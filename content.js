@@ -1657,6 +1657,7 @@
     iframeHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;" +
       "outline:1px dashed #18a0fb;outline-offset:-1px;background:rgba(24,160,251,0.04);" +
       "border-radius:2px;transition:outline 0.08s ease,background 0.08s ease;display:none;";
+    addIframeSpacingOverlays(iframeHighlight, idoc);
     const iframeLabel = idoc.createElement("span");
     iframeLabel.style.cssText = "position:absolute;bottom:100%;left:-1px;background:#18a0fb;color:#fff;" +
       "font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;font-size:10px;line-height:1;" +
@@ -1670,6 +1671,7 @@
     iframeHoverHighlight.style.cssText = "position:fixed;pointer-events:none;z-index:2147483645;" +
       "outline:1px dashed rgba(24,160,251,0.5);outline-offset:-1px;background:rgba(24,160,251,0.02);" +
       "border-radius:2px;display:none;";
+    addIframeSpacingOverlays(iframeHoverHighlight, idoc);
     const iframeHoverLabel = idoc.createElement("span");
     iframeHoverLabel.style.cssText = "position:absolute;bottom:100%;left:-1px;background:rgba(24,160,251,0.7);color:#fff;" +
       "font-family:'JetBrains Mono','Fira Code','SF Mono',monospace;font-size:10px;line-height:1;" +
@@ -1695,6 +1697,7 @@
       iframeHoverHighlight.style.top = r.top + "px";
       iframeHoverHighlight.style.width = r.width + "px";
       iframeHoverHighlight.style.height = r.height + "px";
+      updateIframeSpacingOverlays(iframeHoverHighlight, el);
       const lbl = iframeHoverHighlight.querySelector("span");
       if (lbl) lbl.textContent = elementLabel(el);
     }
@@ -1785,7 +1788,52 @@
       iframeHighlight.style.top = r.top + "px";
       iframeHighlight.style.width = r.width + "px";
       iframeHighlight.style.height = r.height + "px";
+      updateIframeSpacingOverlays(iframeHighlight, el);
     } catch {}
+  }
+
+  function addIframeSpacingOverlays(box, idoc) {
+    const margin = idoc.createElement("div");
+    margin.className = "__glance_margin_overlay__";
+    margin.style.cssText = "position:absolute;pointer-events:none;box-sizing:border-box;" +
+      "border:0 solid rgba(246,178,107,0.35);";
+    box.appendChild(margin);
+    const padding = idoc.createElement("div");
+    padding.className = "__glance_padding_overlay__";
+    padding.style.cssText = "position:absolute;inset:0;pointer-events:none;box-sizing:border-box;" +
+      "border:0 solid rgba(147,196,125,0.4);";
+    box.appendChild(padding);
+  }
+
+  function updateIframeSpacingOverlays(box, el) {
+    if (!box || !el) return;
+    const cs = (el.ownerDocument.defaultView || window).getComputedStyle(el);
+    const mT = Math.max(0, parseFloat(cs.marginTop) || 0);
+    const mR = Math.max(0, parseFloat(cs.marginRight) || 0);
+    const mB = Math.max(0, parseFloat(cs.marginBottom) || 0);
+    const mL = Math.max(0, parseFloat(cs.marginLeft) || 0);
+    const pT = Math.max(0, parseFloat(cs.paddingTop) || 0);
+    const pR = Math.max(0, parseFloat(cs.paddingRight) || 0);
+    const pB = Math.max(0, parseFloat(cs.paddingBottom) || 0);
+    const pL = Math.max(0, parseFloat(cs.paddingLeft) || 0);
+    const marginEl = box.querySelector(".__glance_margin_overlay__");
+    if (marginEl) {
+      marginEl.style.left = `-${mL}px`;
+      marginEl.style.top = `-${mT}px`;
+      marginEl.style.right = `-${mR}px`;
+      marginEl.style.bottom = `-${mB}px`;
+      marginEl.style.borderTopWidth = `${mT}px`;
+      marginEl.style.borderRightWidth = `${mR}px`;
+      marginEl.style.borderBottomWidth = `${mB}px`;
+      marginEl.style.borderLeftWidth = `${mL}px`;
+    }
+    const paddingEl = box.querySelector(".__glance_padding_overlay__");
+    if (paddingEl) {
+      paddingEl.style.borderTopWidth = `${pT}px`;
+      paddingEl.style.borderRightWidth = `${pR}px`;
+      paddingEl.style.borderBottomWidth = `${pB}px`;
+      paddingEl.style.borderLeftWidth = `${pL}px`;
+    }
   }
 
   function removeDeviceFrame() {
