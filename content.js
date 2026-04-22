@@ -143,14 +143,16 @@
   });
 
   // Sync theme changes from other tabs/sites
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "local" || !changes["__glance_theme__"]) return;
-    const val = changes["__glance_theme__"].newValue;
-    if (val === "light" || val === "dark" || val === "system") {
-      themeMode = val;
-      applyTheme();
-    }
-  });
+  try {
+    chrome.storage?.onChanged?.addListener((changes, area) => {
+      if (area !== "local" || !changes["__glance_theme__"]) return;
+      const val = changes["__glance_theme__"].newValue;
+      if (val === "light" || val === "dark" || val === "system") {
+        themeMode = val;
+        applyTheme();
+      }
+    });
+  } catch {}
 
   // ─── Activate ──────────────────────────────────────────────────────────────
   function activate() {
@@ -161,6 +163,7 @@
     createPanel();
     document.addEventListener("mousemove", onMouseMove, true);
     document.addEventListener("mouseleave", onMouseLeave);
+    document.addEventListener("mouseout", onDocMouseOut);
     document.addEventListener("click", onClick, true);
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onScroll);
@@ -185,6 +188,7 @@
     hoveredElement = null;
     document.removeEventListener("mousemove", onMouseMove, true);
     document.removeEventListener("mouseleave", onMouseLeave);
+    document.removeEventListener("mouseout", onDocMouseOut);
     document.removeEventListener("click", onClick, true);
     window.removeEventListener("scroll", onScroll, true);
     window.removeEventListener("resize", onScroll);
@@ -223,6 +227,7 @@
     highlightBox = document.createElement("div");
     highlightBox.id = "__glance_highlight__";
     highlightBox.classList.add("__glance_pinned__");
+    addSpacingOverlays(highlightBox);
     const label = document.createElement("span");
     label.id = "__glance_highlight_label__";
     highlightBox.appendChild(label);
@@ -230,10 +235,53 @@
 
     hoverHighlight = document.createElement("div");
     hoverHighlight.id = "__glance_hover_highlight__";
+    addSpacingOverlays(hoverHighlight);
     const hoverLabel = document.createElement("span");
     hoverLabel.id = "__glance_hover_highlight_label__";
     hoverHighlight.appendChild(hoverLabel);
     document.body.appendChild(hoverHighlight);
+  }
+
+  function addSpacingOverlays(box) {
+    const margin = document.createElement("div");
+    margin.className = "__glance_margin_overlay__";
+    box.appendChild(margin);
+    const padding = document.createElement("div");
+    padding.className = "__glance_padding_overlay__";
+    box.appendChild(padding);
+  }
+
+  function updateSpacingOverlays(box, el) {
+    if (!box || !el) return;
+    const cs = (el.ownerDocument.defaultView || window).getComputedStyle(el);
+    const mT = Math.max(0, parseFloat(cs.marginTop) || 0);
+    const mR = Math.max(0, parseFloat(cs.marginRight) || 0);
+    const mB = Math.max(0, parseFloat(cs.marginBottom) || 0);
+    const mL = Math.max(0, parseFloat(cs.marginLeft) || 0);
+    const pT = Math.max(0, parseFloat(cs.paddingTop) || 0);
+    const pR = Math.max(0, parseFloat(cs.paddingRight) || 0);
+    const pB = Math.max(0, parseFloat(cs.paddingBottom) || 0);
+    const pL = Math.max(0, parseFloat(cs.paddingLeft) || 0);
+
+    const marginEl = box.querySelector(".__glance_margin_overlay__");
+    if (marginEl) {
+      marginEl.style.left = `-${mL}px`;
+      marginEl.style.top = `-${mT}px`;
+      marginEl.style.right = `-${mR}px`;
+      marginEl.style.bottom = `-${mB}px`;
+      marginEl.style.borderTopWidth = `${mT}px`;
+      marginEl.style.borderRightWidth = `${mR}px`;
+      marginEl.style.borderBottomWidth = `${mB}px`;
+      marginEl.style.borderLeftWidth = `${mL}px`;
+    }
+
+    const paddingEl = box.querySelector(".__glance_padding_overlay__");
+    if (paddingEl) {
+      paddingEl.style.borderTopWidth = `${pT}px`;
+      paddingEl.style.borderRightWidth = `${pR}px`;
+      paddingEl.style.borderBottomWidth = `${pB}px`;
+      paddingEl.style.borderLeftWidth = `${pL}px`;
+    }
   }
 
   function positionHighlight(el) {
@@ -247,6 +295,7 @@
     highlightBox.classList.toggle("__glance_pinned__", !!pinnedElement);
     const label = highlightBox.querySelector("#__glance_highlight_label__");
     if (label) label.textContent = elementLabel(el);
+    updateSpacingOverlays(highlightBox, el);
   }
 
   function positionHoverHighlight(el) {
@@ -263,6 +312,7 @@
     hoverHighlight.style.display = "block";
     const label = hoverHighlight.querySelector("#__glance_hover_highlight_label__");
     if (label) label.textContent = elementLabel(el);
+    updateSpacingOverlays(hoverHighlight, el);
   }
 
   function hideHoverHighlight() {
@@ -283,14 +333,22 @@
     }
   }
 
+  function onDocMouseOut(e) {
+    if (e.relatedTarget || e.toElement) return;
+    onMouseLeave();
+  }
+
   function onMouseMove(e) {
     lastMouseX = e.clientX;
     lastMouseY = e.clientY;
     if (devicePreviewActive) return;
     if (!hoverEnabled) return;
     const el = document.elementFromPoint(e.clientX, e.clientY);
-    if (isGlanceUI(el)) {
+    if (!el || isGlanceUI(el)) {
       hideHoverHighlight();
+      if (!pinnedElement && highlightBox) {
+        highlightBox.style.display = "none";
+      }
       return;
     }
 
@@ -1438,10 +1496,11 @@
     btn.classList.toggle("__glance_hover_active__", hoverEnabled);
 
     if (!hoverEnabled) {
+      hideHoverHighlight();
       if (!pinnedElement && highlightBox) {
         highlightBox.style.display = "none";
       }
-      hideHoverHighlight();
+      if (iframeHoverHighlight) iframeHoverHighlight.style.display = "none";
       if (!iframePinnedElement && iframeHighlight) {
         iframeHighlight.style.display = "none";
       }
@@ -1451,8 +1510,8 @@
         if (iframe?.contentDocument?.body) iframe.contentDocument.body.style.cursor = "";
       } catch {}
     } else {
-      if (highlightBox) highlightBox.style.display = "";
-      if (iframeHighlight) iframeHighlight.style.display = "";
+      if (pinnedElement && highlightBox) highlightBox.style.display = "";
+      if (iframePinnedElement && iframeHighlight) iframeHighlight.style.display = "";
       if (!pinnedElement) document.body.style.cursor = "crosshair";
       try {
         const iframe = document.getElementById("__glance_device_iframe__");
@@ -1522,9 +1581,75 @@
         const style = idoc.createElement("style");
         style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; scrollbar-width: none !important; } html::-webkit-scrollbar { display: none !important; }`;
         idoc.head.appendChild(style);
+        replayChangesToDoc(idoc);
         initIframeInspection(idoc);
       } catch {}
     });
+  }
+
+  function getElementPath(el) {
+    if (!el || el.nodeType !== 1) return "";
+    const doc = el.ownerDocument;
+    if (el === doc.documentElement) return "html";
+    if (el === doc.body) return "html > body";
+    const parts = [];
+    let cur = el;
+    while (cur && cur.nodeType === 1 && cur !== doc.documentElement) {
+      const parent = cur.parentElement;
+      if (!parent) break;
+      const tag = cur.tagName.toLowerCase();
+      const siblings = Array.from(parent.children).filter(c => c.tagName === cur.tagName);
+      const idx = siblings.indexOf(cur) + 1;
+      parts.unshift(siblings.length > 1 ? `${tag}:nth-of-type(${idx})` : tag);
+      cur = parent;
+    }
+    return "html > " + parts.join(" > ");
+  }
+
+  function replayChangesToDoc(targetDoc) {
+    if (!targetDoc || changedStyles.size === 0) return;
+
+    let css = "";
+    const pathEntries = [];
+    changedStyles.forEach((props, el) => {
+      if (!el || el.ownerDocument !== document) return;
+      const path = getElementPath(el);
+      if (!path) return;
+      const rules = [];
+      props.forEach((entry, prop) => {
+        rules.push(`${prop}: ${entry.current}`);
+      });
+      if (rules.length) {
+        css += `${path} { ${rules.join("; ")} }\n`;
+        pathEntries.push({ path, props });
+      }
+    });
+
+    if (css) {
+      try {
+        const existing = targetDoc.getElementById("__glance_replay_styles__");
+        if (existing) existing.remove();
+        const style = targetDoc.createElement("style");
+        style.id = "__glance_replay_styles__";
+        style.textContent = css;
+        targetDoc.head.appendChild(style);
+      } catch {}
+    }
+
+    const applyInline = () => {
+      pathEntries.forEach(({ path, props }) => {
+        let target;
+        try { target = targetDoc.querySelector(path); } catch { return; }
+        if (!target) return;
+        props.forEach((entry, prop) => {
+          try { target.style.setProperty(prop, entry.current); } catch {}
+        });
+      });
+    };
+
+    applyInline();
+    setTimeout(applyInline, 300);
+    setTimeout(applyInline, 1200);
   }
 
   function initIframeInspection(idoc) {

@@ -3,7 +3,7 @@
   "name": "Glance — Design Inspector",
   "version": "1.0.0",
   "description": "A Figma-style design inspector for any webpage. Click the toolbar icon or use Cmd+Shift+U.",
-  "permissions": ["activeTab", "scripting"],
+  "permissions": ["activeTab", "scripting", "storage"],
   "host_permissions": ["<all_urls>"],
   "content_scripts": [
     {

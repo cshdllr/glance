@@ -57,6 +57,22 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   display: none !important;
 }
 
+/* ─── Spacing overlays (padding / margin on highlights) ──────────────────── */
+.__glance_margin_overlay__ {
+  position: absolute;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 0 solid rgba(246, 178, 107, 0.35);
+}
+
+.__glance_padding_overlay__ {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 0 solid rgba(147, 196, 125, 0.4);
+}
+
 /* ─── Panel ──────────────────────────────────────────────────────────────── */
 #__glance_panel__ {
   --glance-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
@@ -87,6 +103,32 @@ html.__glance_device_mode__ #__glance_hover_highlight__ {
   overflow: hidden;
   color: var(--glance-text);
   border-left: 1px solid var(--glance-border);
+}
+
+/* ─── Font isolation — prevent host page from bleeding typography in ────── */
+#__glance_panel__,
+#__glance_panel__ *:not(.__glance_enum_option__) {
+  font-family: var(--glance-font-sans);
+}
+
+#__glance_panel__ .__glance_prop_value__,
+#__glance_panel__ .__glance_val__,
+#__glance_panel__ .__glance_edit_input__,
+#__glance_panel__ .__glance_cp_hex_input__,
+#__glance_panel__ .__glance_dom_item__,
+#__glance_panel__ .__glance_class_rule_selector__ {
+  font-family: var(--glance-font-mono);
+}
+
+#__glance_panel__ button,
+#__glance_panel__ input,
+#__glance_panel__ select,
+#__glance_panel__ textarea {
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+  line-height: inherit;
+  color: inherit;
 }
 
 /* ─── Dark mode overrides ─────────────────────────────────────────────── */
