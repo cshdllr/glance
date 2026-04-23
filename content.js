@@ -36,7 +36,7 @@
   let devicePreviewActive = false;
   let deviceFrame = null;
   const DEVICE = { name: "iPhone", w: 393, h: 780 };
-  const FRAME = { w: 417, h: 876, cutoutX: 12, cutoutY: 19, statusBarH: 54 };
+  const FRAME = { w: 417, h: 876, cutoutX: 12, cutoutY: 19, statusBarH: 54, bottomBarH: 44 };
 
   // ─── Field type lookups ────────────────────────────────────────────────────
   const ENUM_PROPS = {
@@ -1252,8 +1252,7 @@
   }
 
   function applyChange(targetEl, cssProp, originalVal, newVal) {
-    // Apply to the element
-    targetEl.style.setProperty(cssProp, newVal);
+    applyStyleWithEscalation(targetEl, cssProp, newVal);
 
     // Track the change
     if (!changedStyles.has(targetEl)) {
@@ -1273,6 +1272,18 @@
       }
     }
     updateCopyChangesButton();
+  }
+
+  function applyStyleWithEscalation(targetEl, cssProp, newVal) {
+    const win = targetEl.ownerDocument.defaultView || window;
+    const before = win.getComputedStyle(targetEl).getPropertyValue(cssProp);
+    try { targetEl.style.setProperty(cssProp, newVal); } catch {}
+    const after = win.getComputedStyle(targetEl).getPropertyValue(cssProp);
+    // If the computed value didn't change, something with higher specificity
+    // or !important is overriding. Re-apply with !important.
+    if (after === before && String(newVal).trim() !== "") {
+      try { targetEl.style.setProperty(cssProp, newVal, "important"); } catch {}
+    }
   }
 
   function updateCopyChangesButton() {
@@ -1579,12 +1590,62 @@
         const idoc = iframe.contentDocument;
         if (!idoc || !idoc.body) return;
         const style = idoc.createElement("style");
-        style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; scrollbar-width: none !important; } html::-webkit-scrollbar { display: none !important; }`;
+        style.textContent = `html { padding-top: ${FRAME.statusBarH}px !important; padding-bottom: ${FRAME.bottomBarH}px !important; scrollbar-width: none !important; } html::-webkit-scrollbar { display: none !important; }`;
         idoc.head.appendChild(style);
         replayChangesToDoc(idoc);
         initIframeInspection(idoc);
+        adjustFixedBottomElements(idoc);
       } catch {}
     });
+  }
+
+  function adjustFixedBottomElements(idoc) {
+    const win = idoc.defaultView;
+    if (!win) return;
+    const ATTR = "data-glance-bottom-shift";
+    const shift = FRAME.bottomBarH;
+
+    function scan() {
+      const vh = win.innerHeight;
+      const all = idoc.querySelectorAll("body *");
+      for (const el of all) {
+        if (el.hasAttribute(ATTR)) continue;
+        let cs;
+        try { cs = win.getComputedStyle(el); } catch { continue; }
+        const pos = cs.position;
+        if (pos !== "fixed" && pos !== "sticky" && pos !== "absolute") continue;
+
+        // Geometry check: bottom edge anchored near the bottom of the viewport.
+        let rect;
+        try { rect = el.getBoundingClientRect(); } catch { continue; }
+        if (!rect || rect.width < 20 || rect.height < 10 || rect.height > 200) continue;
+        const distFromBottom = vh - rect.bottom;
+        if (distFromBottom < -2 || distFromBottom > 8) continue;
+
+        el.setAttribute(ATTR, "1");
+        try {
+          if (pos === "sticky") {
+            // Sticky: shrinking bottom offset pulls it up within its container.
+            el.style.setProperty("bottom", shift + "px", "important");
+            el.style.setProperty("margin-bottom", shift + "px", "important");
+          } else {
+            // Fixed/absolute: use transform so we don't fight inline `bottom` declarations.
+            const prev = el.style.transform || "";
+            el.style.setProperty("transform", `translateY(-${shift}px) ${prev}`.trim(), "important");
+          }
+        } catch {}
+      }
+    }
+
+    scan();
+    setTimeout(scan, 300);
+    setTimeout(scan, 1200);
+    setTimeout(scan, 3000);
+
+    try {
+      const mo = new win.MutationObserver(() => scan());
+      mo.observe(idoc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class"] });
+    } catch {}
   }
 
   function getElementPath(el) {
@@ -1617,7 +1678,7 @@
       if (!path) return;
       const rules = [];
       props.forEach((entry, prop) => {
-        rules.push(`${prop}: ${entry.current}`);
+        rules.push(`${prop}: ${entry.current} !important`);
       });
       if (rules.length) {
         css += `${path} { ${rules.join("; ")} }\n`;
@@ -1642,7 +1703,7 @@
         try { target = targetDoc.querySelector(path); } catch { return; }
         if (!target) return;
         props.forEach((entry, prop) => {
-          try { target.style.setProperty(prop, entry.current); } catch {}
+          applyStyleWithEscalation(target, prop, entry.current);
         });
       });
     };
